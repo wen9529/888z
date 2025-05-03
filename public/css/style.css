@@ -13,13 +13,12 @@ h1 {
 
 #game-container {
   display: grid;
-  /* 进一步调整 Grid 区域比例，增加边缘空间 */
-  grid-template-columns: 0.2fr 0.6fr 0.2fr; /* 左右边缘更宽，中间区域相对缩小 */
-  grid-template-rows: 0.5fr 2.5fr 1fr; /* 上下边缘更宽，中央区域相对缩小 */
+  grid-template-columns: 0.2fr 0.6fr 0.2fr;
+  grid-template-rows: 0.5fr 2.5fr 1fr;
   gap: 5px;
-  width: 98%; /* 增加游戏区域宽度，更靠近边缘 */
-  max-width: 1400px; /* 可以适当增加最大宽度 */
-  margin: 5px auto; /* 减小外边距 */
+  width: 98%;
+  max-width: 1400px;
+  margin: 5px auto;
   /* border: 1px solid #ccc; */
 }
 
@@ -34,100 +33,4 @@ h1 {
   /* border: 1px solid #ccc; */
   padding: 5px;
   /* background-color: #fff; */
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-/* 玩家布局 - 调整位置 */
-#player-top {
-  grid-column: 1 / 4; /* 顶部玩家跨越三列 */
-  grid-row: 1 / 2;
-  align-self: start;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding-top: 10px; /* 增加顶部内边距 */
-}
-
-#player-left {
-  grid-column: 1 / 2;
-  grid-row: 2 / 3;
-  align-self: center;
-  justify-self: start;
-  padding-left: 10px; /* 增加左侧内边距 */
-}
-
-#player-center { /* 自己的手牌 */
-  grid-column: 1 / 4;
-  grid-row: 3 / 4;
-  align-self: end;
-  justify-content: center;
-  padding-bottom: 10px; /* 增加底部内边距 */
-}
-
-#player-right {
-  grid-column: 3 / 4;
-  grid-row: 2 / 3;
-  align-self: center;
-  justify-self: end;
-  padding-right: 10px; /* 增加右侧内边距 */
-}
-
-/* 牌桌区域 */
-#card-table {
-    grid-column: 2 / 3;
-    grid-row: 2 / 3;
-    background-color: #8B4513;
-    border-radius: 50%;
-    width: 90%; /* 增加牌桌大小 */
-    height: 90%;
-    align-self: center;
-    justify-self: center;
-    position: relative;
-}
-
-
-.player-area h3 {
-  margin-top: 5px;
-  margin-bottom: 5px;
-}
-
-.cards {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.card {
-  width: 50px;
-  height: 75px;
-  border: 1px solid #ccc;
-  margin: 2px;
-  background-size: cover;
-  background-position: center;
-  border-radius: 5px;
-  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-.card.back {
-  background-image: url('/images/back.png');
-}
-
-.card-pile {
-    width: 80px;
-    height: 120px;
-    background-size: cover;
-    background-position: center;
-    border-radius: 5px;
-    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-/* 针对靠边玩家的卡牌布局调整 */
-#player-left .cards,
-#player-right .cards {
-  flex-direction: column;
-  align-items: center;
-}
+  border-radius:
