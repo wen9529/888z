@@ -5,6 +5,10 @@ body {
   margin: 0;
   padding: 0;
   background-color: #f0f0f0;
+  display: flex; /* 使用 Flexbox 居中内容 */
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh; /* 确保至少占满视口高度 */
 }
 
 h1 {
@@ -13,24 +17,167 @@ h1 {
 
 #game-container {
   display: grid;
-  grid-template-columns: 0.2fr 0.6fr 0.2fr;
-  grid-template-rows: 0.5fr 2.5fr 1fr;
+  /* 调整 Grid 模板，为玩家区域和功能区域留出空间 */
+  grid-template-columns: 0.2fr 0.6fr 0.2fr; /* 左右边缘，中央区域 */
+  grid-template-rows: auto 2.5fr auto auto; /* 顶部玩家，中央牌桌，我的手牌，整理区域 */
   gap: 5px;
   width: 98%;
   max-width: 1400px;
-  margin: 5px auto;
+  margin: 0 auto; /* 移除顶部外边距 */
   /* border: 1px solid #ccc; */
 }
 
 #start-game-button {
   grid-column: 2 / 3;
-  grid-row: 1 / 2;
-  align-self: start;
+  grid-row: 1 / 2; /* 顶部中间 */
+  align-self: center;
   justify-self: center;
 }
 
 .player-area {
   /* border: 1px solid #ccc; */
   padding: 5px;
-  /* background-color: #fff; */
-  border-radius:
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 玩家布局 - 精确控制位置 */
+#player-top {
+  grid-column: 2 / 3;
+  grid-row: 1 / 2; /* 顶部玩家 */
+  align-self: start;
+  justify-self: center;
+}
+
+#player-left {
+  grid-column: 1 / 2;
+  grid-row: 2 / 3; /* 左侧玩家 */
+  align-self: center;
+  justify-self: start;
+}
+
+#player-right {
+  grid-column: 3 / 4;
+  grid-row: 2 / 3; /* 右侧玩家 */
+  align-self: center;
+  justify-self: end;
+}
+
+#my-original-hand {
+  grid-column: 1 / 4; /* 我的手牌跨越三列 */
+  grid-row: 3 / 4; /* 位于牌桌下方 */
+  align-self: center;
+  justify-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#arrange-area {
+  grid-column: 1 / 4; /* 整理区域跨越三列 */
+  grid-row: 4 / 5; /* 位于我的手牌下方 */
+  align-self: center;
+  justify-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* 可以添加边框或背景色以区分 */
+  border: 1px dashed #ccc;
+  padding: 10px;
+  margin-top: 10px;
+}
+
+.hand-section {
+    margin-bottom: 10px;
+}
+
+.hand-section .cards {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    min-height: 100px; /* 确保区域有一定高度，方便拖放 */
+    border: 1px solid #eee;
+    padding: 5px;
+    background-color: #fff;
+}
+
+
+/* 牌桌区域 */
+#card-table {
+    grid-column: 2 / 3;
+    grid-row: 2 / 3; /* 牌桌在中央区域 */
+    background-color: #8B4513;
+    border-radius: 50%;
+    width: 90%;
+    height: 90%;
+    align-self: center;
+    justify-self: center;
+    position: relative;
+}
+
+
+.player-area h3 {
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+
+.cards {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.card {
+  width: 50px;
+  height: 75px;
+  border: 1px solid #ccc;
+  margin: 2px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 5px;
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: grab; /* 添加抓取光标表示可拖动 */
+}
+
+.card:active {
+    cursor: grabbing; /* 添加抓取中光标 */
+}
+
+.card.back {
+  background-image: url('/images/back.png');
+}
+
+.card-pile {
+    width: 80px;
+    height: 120px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 5px;
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* 针对靠边玩家的卡牌布局调整 */
+#player-left .cards,
+#player-right .cards {
+  flex-direction: column;
+  align-items: center;
+}
+
+#results-area {
+    grid-column: 1 / 4; /* 结果区域跨越三列 */
+    grid-row: 5 / 6; /* 位于整理区域下方 */
+    margin-top: 20px;
+}
+
+.arranged-hand-result {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 10px;
+}
+
+.arranged-hand-result .cards {
+    min-height: 80px; /* 调整结果区域卡牌容器高度 */
+}
