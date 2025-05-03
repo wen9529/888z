@@ -11,6 +11,11 @@ document.addEventListener('DOMContentLoaded', () => {
   playerAreas['center'] = createPlayerArea('player-center', '玩家 1 (您)'); // 自己的手牌
   playerAreas['right'] = createPlayerArea('player-right', '玩家 4'); // 右侧玩家
 
+  // 创建牌桌区域
+  const cardTableDiv = document.createElement('div');
+  cardTableDiv.id = 'card-table';
+  gameContainer.appendChild(cardTableDiv);
+
 
   // 将玩家区域添加到游戏容器
   for (const position in playerAreas) {
@@ -25,7 +30,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const playerDiv = document.createElement('div');
       playerDiv.id = id;
       playerDiv.classList.add('player-area');
-      playerDiv.innerHTML = `<h3>${title}</h3><div class="cards"></div>`; // 保持cards容器，用于显示自己的手牌或牌堆
+      playerDiv.innerHTML = `<h3>${title}</h3><div class="cards"></div>`;
+      // TODO: 可以添加头像或玩家信息区域
+      // playerDiv.innerHTML = `<h3>${title}</h3><div class="player-info"></div><div class="cards"></div>`;
       return playerDiv;
   }
 
@@ -98,8 +105,6 @@ document.addEventListener('DOMContentLoaded', () => {
             cardPileDiv.style.position = 'relative'; // 为了实现堆叠效果
             cardPileDiv.style.border = '1px solid #ccc'; // 添加边框
 
-            // 可以通过添加多个元素或使用阴影来模拟堆叠效果
-            // 这里简单地只添加一个元素
             targetArea.appendChild(cardPileDiv);
         }
     });
