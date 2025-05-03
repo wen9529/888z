@@ -1,7 +1,7 @@
 {
-  "name": "thirteen-cards-game",
+  "name": "thirteen-cards-game-v2",
   "version": "1.0.0",
-  "description": "A Thirteen Cards web game",
+  "description": "A Thirteen Cards web game v2",
   "main": "server/app.js",
   "scripts": {
     "start": "node server/app.js"
