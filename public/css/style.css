@@ -1,19 +1,35 @@
 /* 您的 CSS 样式 */
 body {
   font-family: sans-serif;
+  text-align: center;
 }
 
 #game-area {
-  /* 游戏区域样式 */
+  margin-top: 20px;
+}
+
+.player-hand {
+  margin-bottom: 20px;
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+
+.player-hand h3 {
+  margin-top: 0;
+}
+
+.cards {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 .card {
-  /* 扑克牌样式 */
-  width: 80px;
-  height: 120px;
+  width: 60px; /* 调整扑克牌大小 */
+  height: 90px;
   border: 1px solid #ccc;
-  margin: 5px;
-  display: inline-block;
+  margin: 3px;
   background-size: cover;
   background-position: center;
+  border-radius: 5px;
 }
