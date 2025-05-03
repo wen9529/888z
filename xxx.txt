@@ -1,0 +1,13 @@
+phaser.min.js:1 
+ Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute set to true. See: https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-will-read-frequently
+phaser.min.js:1 
+ Canvas2D: Multiple readback operations using getImageData are faster with the willReadFrequently attribute set to true. See: https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-will-read-frequently
+phaser.min.js:1 
+ Uncaught TypeError: this.gameCanvas.getContext is not a function
+    at new initialize (phaser.min.js:1:375377)
+    at t.exports (phaser.min.js:1:374410)
+    at initialize.boot (phaser.min.js:1:792299)
+    at t.exports (phaser.min.js:1:445406)
+    at new initialize (phaser.min.js:1:792167)
+    at HTMLDocument.<anonymous> (main.js:2:18)
+﻿
