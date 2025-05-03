@@ -1,38 +1,63 @@
-// 游戏逻辑（简化示例）
+// 游戏逻辑
 
-function shuffleCards() {
-  // 洗牌逻辑
-  const deck = []; // 52张牌
-  // ... 生成牌
-  // ... 洗牌
+// 定义牌的花色和点数
+const suits = ['C', 'D', 'H', 'S']; // 梅花, 方块, 红桃, 黑桃
+const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']; // 点数 (T 代表 10)
+
+// 生成一副完整的牌
+function createDeck() {
+  const deck = [];
+  for (const suit of suits) {
+    for (const rank of ranks) {
+      deck.push(rank + suit); // 例如：'2C', 'AD'
+    }
+  }
   return deck;
 }
 
+// 洗牌 (Fisher-Yates 洗牌算法)
+function shuffleDeck(deck) {
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]]; // 交换元素
+  }
+  return deck;
+}
+
+// 发牌给指定数量的玩家
 function dealCards(deck, numPlayers) {
-  // 发牌逻辑
-  const hands = [];
-  // ... 发牌给每个玩家
+  if (deck.length < numPlayers * 13) {
+    throw new Error("牌不够发！");
+  }
+
+  const hands = Array.from({ length: numPlayers }, () => []);
+  let cardIndex = 0;
+  for (let i = 0; i < 13; i++) {
+    for (let j = 0; j < numPlayers; j++) {
+      hands[j].push(deck[cardIndex++]);
+    }
+  }
   return hands;
 }
 
+// TODO: 实现更复杂的牌型判断逻辑
 function checkCardType(hand) {
-  // 牌型判断逻辑
-  // ... 判断各种牌型（三同花、三顺子、四梅、葫芦、同花、顺子、三条、两对、一对、散牌）
-  return "牌型"; // 返回牌型信息
+  // 这是一个占位符，您需要根据十三水规则实现牌型判断
+  // 返回一个表示牌型和大小的信息
+  return "未知牌型";
 }
 
+// TODO: 实现比牌逻辑
 function compareHands(hand1, hand2) {
-  // 比牌逻辑
-  // ... 按照十三水规则比较两手牌的大小
-  return 1; // 1表示hand1赢，-1表示hand2赢，0表示平局
+  // 这是一个占位符，您需要根据十三水规则实现比牌
+  return 0; // 0表示平局，正数表示hand1赢，负数表示hand2赢
 }
 
-// 更多游戏逻辑函数...
-
+// 导出游戏逻辑函数
 module.exports = {
-  shuffleCards,
+  createDeck,
+  shuffleDeck,
   dealCards,
   checkCardType,
   compareHands
-  // 导出其他游戏逻辑函数
 };
