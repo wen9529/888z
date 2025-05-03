@@ -11,9 +11,23 @@
     </div>
 
     <div id="room-selection">
-        <input type="text" id="room-id-input" placeholder="输入房间号">
+        选择房间：
+        <select id="room-id-select">
+            <option value="1">房间 1</option>
+            <option value="2">房间 2</option>
+            <option value="3">房间 3</option>
+            <option value="4">房间 4</option>
+            <option value="5">房间 5</option>
+        </select>
         <button id="join-room-button">加入房间</button>
     </div>
+
+     <div id="lobby" style="display: none;">
+         <p>当前房间：<span id="current-room-display"></span></p>
+         <p>玩家列表：</p>
+         <ul id="player-list"></ul>
+         <button id="ready-button">准备</button>
+     </div>
 
 
     <div class="player-area" id="player-top">
@@ -42,7 +56,8 @@
        </div>
     </div>
 
-    <button id="start-game-button">开始游戏</button>
+    <!-- 游戏开始后隐藏开始按钮，由满座自动开始 -->
+    <!-- <button id="start-game-button">开始游戏</button> -->
 
     <div id="message-area"></div>
     <div id="current-play">
