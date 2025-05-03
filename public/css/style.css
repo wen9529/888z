@@ -13,73 +13,80 @@ h1 {
 
 #game-container {
   display: grid;
-  /* 定义更多的 Grid 区域来容纳不同元素 */
-  grid-template-columns: 0.1fr 1fr 0.1fr; /* 左右窄边栏，中间宽区域 */
-  grid-template-rows: 0.5fr 3fr 1fr; /* 顶部玩家/信息，中央牌桌，底部自己手牌 */
+  /* 进一步调整 Grid 区域比例，增加边缘空间 */
+  grid-template-columns: 0.2fr 0.6fr 0.2fr; /* 左右边缘更宽，中间区域相对缩小 */
+  grid-template-rows: 0.5fr 2.5fr 1fr; /* 上下边缘更宽，中央区域相对缩小 */
   gap: 5px;
-  width: 95%;
-  max-width: 1200px;
-  margin: 10px auto;
-  /* border: 1px solid #ccc; /* 方便调试时查看布局 */
+  width: 98%; /* 增加游戏区域宽度，更靠近边缘 */
+  max-width: 1400px; /* 可以适当增加最大宽度 */
+  margin: 5px auto; /* 减小外边距 */
+  /* border: 1px solid #ccc; */
 }
 
 #start-game-button {
   grid-column: 2 / 3;
-  grid-row: 1 / 2; /* 按钮可以放在顶部中间的某个位置 */
-  align-self: start; /* 顶部对齐 */
-  justify-self: center; /* 水平居中 */
+  grid-row: 1 / 2;
+  align-self: start;
+  justify-self: center;
 }
 
 .player-area {
-  /* border: 1px solid #ccc; /* 方便调试时查看玩家区域 */
+  /* border: 1px solid #ccc; */
   padding: 5px;
-  /* background-color: #fff; /* 移除背景色，让牌桌背景更突出 */
+  /* background-color: #fff; */
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* justify-content: center; */
+  justify-content: center;
 }
 
-/* 玩家布局 - 精确控制位置 */
+/* 玩家布局 - 调整位置 */
 #player-top {
-  grid-column: 2 / 3;
+  grid-column: 1 / 4; /* 顶部玩家跨越三列 */
   grid-row: 1 / 2;
-  align-self: start; /* 顶部对齐 */
+  align-self: start;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 10px; /* 增加顶部内边距 */
 }
 
 #player-left {
   grid-column: 1 / 2;
   grid-row: 2 / 3;
-  align-self: center; /* 垂直居中 */
-  justify-self: start; /* 左侧对齐 */
+  align-self: center;
+  justify-self: start;
+  padding-left: 10px; /* 增加左侧内边距 */
 }
 
 #player-center { /* 自己的手牌 */
-  grid-column: 1 / 4; /* 自己的手牌跨越三列 */
+  grid-column: 1 / 4;
   grid-row: 3 / 4;
-  align-self: end; /* 底部对齐 */
-  justify-content: center; /* 手牌居中 */
+  align-self: end;
+  justify-content: center;
+  padding-bottom: 10px; /* 增加底部内边距 */
 }
 
 #player-right {
   grid-column: 3 / 4;
   grid-row: 2 / 3;
-  align-self: center; /* 垂直居中 */
-  justify-self: end; /* 右侧对齐 */
+  align-self: center;
+  justify-self: end;
+  padding-right: 10px; /* 增加右侧内边距 */
 }
 
-/* 新增牌桌区域 */
+/* 牌桌区域 */
 #card-table {
     grid-column: 2 / 3;
     grid-row: 2 / 3;
-    background-color: #8B4513; /* 棕色，模拟牌桌 */
-    border-radius: 50%; /* 圆形或椭圆形牌桌 */
-    width: 80%;
-    height: 80%;
+    background-color: #8B4513;
+    border-radius: 50%;
+    width: 90%; /* 增加牌桌大小 */
+    height: 90%;
     align-self: center;
     justify-self: center;
-    position: relative; /* 用于放置其他元素 */
+    position: relative;
 }
 
 
@@ -121,17 +128,6 @@ h1 {
 /* 针对靠边玩家的卡牌布局调整 */
 #player-left .cards,
 #player-right .cards {
-  flex-direction: column; /* 左侧和右侧玩家的卡牌垂直排列 */
+  flex-direction: column;
   align-items: center;
-}
-
-/* 可以为不同玩家区域添加特定样式，例如头像或信息 */
-#player-top .player-info {
-    /* 顶部玩家信息样式 */
-}
-#player-left .player-info {
-    /* 左侧玩家信息样式 */
-}
-#player-right .player-info {
-    /* 右侧玩家信息样式 */
 }
