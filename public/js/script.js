@@ -141,6 +141,24 @@ socket.on('seat_assigned', (position) => {
      document.getElementById(`player-${myPosition}`).querySelector('h3').textContent = `玩家 1 (您)`;
 });
 
+socket.on('joined_room', (data) => {
+    currentRoomId = data.roomId;
+    console.log('成功加入房间：', currentRoomId);
+    messageArea.textContent = `已加入房间 ${currentRoomId}，等待其他玩家加入并准备...`;
+
+    roomSelectionArea.style.display = 'none'; // 隐藏房间选择区域
+    lobbyArea.style.display = 'flex'; // 显示大厅区域
+    currentRoomDisplay.textContent = currentRoomId; // 显示当前房间号
+    readyButton.style.display = 'inline-block'; // 显示准备按钮
+
+     // 隐藏游戏区域和按钮，等待游戏开始
+     turnIndicator.style.display = 'none';
+     currentPlayArea.style.display = 'none';
+     playCardsButton.style.display = 'none';
+     passTurnButton.style.display = 'none';
+});
+
+
 socket.on('player_list_updated', (playersInfo) => {
     playerList = playersInfo;
      console.log('玩家列表更新:', playerList);
@@ -150,7 +168,7 @@ socket.on('player_list_updated', (playersInfo) => {
 
 socket.on('player_ready_status', (data) => {
     console.log(`玩家 ${data.playerId} 准备状态更新：${data.ready}`);
-    // 可以在玩家列表或玩家区域显示准备状态
+    // 更新玩家列表中的准备状态
      const playerInfo = playerList.find(p => p.id === data.playerId);
       if (playerInfo) {
            playerInfo.ready = data.ready;
@@ -186,6 +204,7 @@ socket.on('game_started', (data) => {
      playerOrder = data.playerOrder;
      updateTurnIndicator(data.startPlayerId);
      displayOtherPlayersInfo(data.players);
+
      // 显示出牌和过牌按钮
       playCardsButton.style.display = 'inline-block';
       passTurnButton.style.display = 'inline-block';
@@ -230,10 +249,20 @@ socket.on('player_passed', (data) => {
       messageArea.textContent = `${getPlayerName(data.playerId)} 过牌`;
 });
 
+socket.on('round_ended', () => {
+    console.log('一轮结束，清空桌面');
+    currentPlayContainer.innerHTML = ''; // 清空桌面上的牌
+    messageArea.textContent = '一轮结束，桌面已清空';
+});
+
 
 socket.on('next_turn', (data) => {
     console.log('下一回合：', data.playerId);
     updateTurnIndicator(data.playerId);
+     // 如果轮到自己，提示出牌
+      if (data.playerId === myPlayerId) {
+           messageArea.textContent = '轮到你出牌了！';
+      }
 });
 
 socket.on('game_over', (data) => {
@@ -251,106 +280,4 @@ socket.on('game_over', (data) => {
       playCardsButton.style.display = 'none';
       passTurnButton.style.display = 'none';
 
-     // 游戏结束后显示重置按钮或者返回房间大厅
-      setTimeout(() => {
-           socket.emit('request_reset'); // 自动请求重置
-      }, 5000); // 5秒后自动请求重置
-});
-
-socket.on('game_reset', () => {
-     console.log('游戏已重置');
-     messageArea.textContent = '游戏已重置，等待新游戏开始';
-      currentPlayContainer.innerHTML = '';
-      myHandContainer.innerHTML = '';
-      selectedCards = [];
-       const playerAreas = {
-            'top': document.getElementById('player-top'),
-            'left': document.getElementById('player-left'),
-            'right': document.getElementById('player-right')
-       };
-       for (const position in playerAreas) {
-            const playerArea = playerAreas[position];
-            if (playerArea) {
-                 playerArea.querySelector('h3').textContent = `玩家 ${Object.keys(playerAreas).indexOf(position) + 2}`;
-                 const cardsContainer = playerArea.querySelector('.cards');
-                 if (cardsContainer) cardsContainer.innerHTML = '';
-            }
-       }
-       document.getElementById('player-bottom').querySelector('h3').textContent = '玩家 1 (您)';
-
-      turnIndicator.style.display = 'none';
-      currentPlayArea.style.display = 'none';
-      playCardsButton.style.display = 'none';
-      passTurnButton.style.display = 'none';
-
-      // 返回房间大厅
-      lobbyArea.style.display = 'flex';
-      readyButton.style.display = 'inline-block'; // 显示准备按钮
-       readyButton.textContent = '准备'; // 重置按钮文本
-       readyButton.disabled = false; // 启用准备按钮
-});
-
-
-socket.on('error', (message) => {
-    console.error('服务器错误：', message);
-    messageArea.textContent = '错误：' + message;
-});
-
-socket.on('player_left', (data) => {
-     console.log('玩家离开：', data.id, data.position);
-     messageArea.textContent = `${getPlayerName(data.id)} 离开了`;
-     const playerArea = document.getElementById(`player-${data.position}`);
-      if (playerArea) {
-           playerArea.querySelector('.cards').innerHTML = '';
-           playerArea.querySelector('h3').textContent = `玩家 ${Object.keys({top:'',left:'',right:''}).indexOf(data.position) + 2}`;
-      }
-});
-
-socket.on('spectating', (data) => {
-     console.log(data.message);
-     messageArea.textContent = data.message;
-     // 观战模式下隐藏游戏相关按钮
-     playCardsButton.style.display = 'none';
-     passTurnButton.style.display = 'none';
-     readyButton.style.display = 'none'; // 观战模式下隐藏准备按钮
-});
-
-
-// 更新回合指示器 (与之前相同)
-function updateTurnIndicator(playerId) {
-    turnIndicator.textContent = `当前回合：${getPlayerName(playerId)}`;
-}
-
-// 根据玩家 ID 获取玩家名称 (与之前相同)
-function getPlayerName(playerId) {
-    if (playerId === myPlayerId) {
-        return '您';
-    }
-     const playerInfo = playerList.find(p => p.id === playerId);
-      if (playerInfo) {
-           return `玩家 ${playerList.findIndex(p => p.id === playerId) + 1}`;
-      }
-    return '未知玩家';
-}
-
-
-// 按钮事件监听
-
-if (joinRoomButton) {
-    joinRoomButton.addEventListener('click', () => {
-        const roomId = roomIdSelect.value;
-        if (roomId) {
-            socket.emit('join_room', roomId);
-             messageArea.textContent = `尝试加入房间：${roomId}...`;
-        } else {
-            messageArea.textContent = '请选择房间号！';
-        }
-    });
-}
-
-if (readyButton) {
-    readyButton.addEventListener('click', () => {
-        if (currentRoomId) {
-            socket.emit('player_ready');
-             readyButton.textContent = '已准备';
-             readyButton.disabled
+     // 游戏结束后自动请求重置
