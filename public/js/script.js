@@ -1,13 +1,10 @@
 // 客户端脚本
 
 document.addEventListener('DOMContentLoaded', () => {
-  const gameArea = document.getElementById('game-area');
+  const startGameButton = document.getElementById('start-game-button');
+  const playerHandsDiv = document.getElementById('player-hands');
 
-  // 开始新游戏按钮（示例）
-  const startButton = document.createElement('button');
-  startButton.textContent = '开始游戏';
-  startButton.addEventListener('click', startGame);
-  gameArea.appendChild(startButton);
+  startGameButton.addEventListener('click', startGame);
 
   function startGame() {
     fetch('/start', {
@@ -20,34 +17,40 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(response => response.json())
     .then(data => {
       if (data.success) {
-        // 显示玩家的手牌（示例）
         displayHands(data.hands);
       } else {
-        alert('开始游戏失败');
+        alert('开始游戏失败：' + data.message);
       }
     })
     .catch(error => {
-      console.error('Error:', error);
-      alert('发生错误');
+      console.error('Error starting game:', error);
+      alert('发生错误，请查看控制台');
     });
   }
 
   function displayHands(hands) {
-    gameArea.innerHTML = ''; // 清空游戏区域
+    playerHandsDiv.innerHTML = ''; // 清空手牌区域
 
     hands.forEach((hand, playerIndex) => {
-      const playerDiv = document.createElement('div');
-      playerDiv.innerHTML = `<h2>玩家 ${playerIndex + 1} 的手牌</h2>`;
+      const playerHandDiv = document.createElement('div');
+      playerHandDiv.classList.add('player-hand');
+      playerHandDiv.innerHTML = `<h3>玩家 ${playerIndex + 1} 的手牌</h3><div class="cards"></div>`;
+
+      const cardsContainer = playerHandDiv.querySelector('.cards');
       hand.forEach(card => {
         const cardDiv = document.createElement('div');
         cardDiv.classList.add('card');
         // 根据牌的信息设置背景图片
-        cardDiv.style.backgroundImage = `url('/images/${card}.png')`; // 假设牌信息是文件名
-        playerDiv.appendChild(cardDiv);
+        cardDiv.style.backgroundImage = `url('/images/${card}.png')`; // 假设牌信息是文件名，例如 'AH.png'
+        cardsContainer.appendChild(cardDiv);
       });
-      gameArea.appendChild(playerDiv);
+
+      playerHandsDiv.appendChild(playerHandDiv);
     });
   }
 
-  // 您需要添加更多的客户端逻辑，例如选择牌、出牌、显示结果等
+  // TODO: 添加更多客户端逻辑，例如：
+  // - 允许玩家选择和排列手牌
+  // - 发送玩家出牌的请求到服务器
+  // - 显示比牌结果
 });
