@@ -18,11 +18,13 @@ function startGame() {
       myHand = data.hand; // 存储自己的手牌
       displayMyOriginalHand(myHand); // 显示自己的原始手牌供整理
       displayOtherPlayersBacks(); // 显示其他玩家的牌背面
-      // TODO: 进入整理牌型阶段，隐藏开始按钮，显示整理区域
+      // 进入整理牌型阶段
       const startGameButton = document.getElementById('start-game-button');
       const arrangeArea = document.getElementById('arrange-area');
+      const myOriginalHandArea = document.getElementById('my-original-hand'); // 显示我的手牌区域
       if(startGameButton) startGameButton.style.display = 'none';
-      if(arrangeArea) arrangeArea.style.display = 'flex'; // 使用 flex 布局显示整理区域
+      if(arrangeArea) arrangeArea.style.display = 'flex';
+      if(myOriginalHandArea) myOriginalHandArea.style.display = 'flex';
 
 
     } else {
@@ -54,16 +56,15 @@ function getCardFilename(card) {
     };
     const ranks = {
       '2': '2', '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
-      'T': '10', // 使用 '10' 作为文件名的一部分
+      'T': '10',
       'J': 'jack',
       'Q': 'queen',
       'K': 'king',
       'A': 'ace'
     };
-     // 确保 card 对象中有 rank 和 suit 属性
      if (!card || !card.rank || !card.suit) {
          console.error("Invalid card object:", card);
-         return ''; // 返回空字符串或默认图片文件名
+         return '';
      }
 
      const rankName = ranks[card.rank];
@@ -71,21 +72,12 @@ function getCardFilename(card) {
 
      if (!rankName || !suitName) {
           console.error("Could not get filename for card:", card);
-          return ''; // 返回空字符串或默认图片文件名
+          return '';
      }
-
 
      return `${rankName.toLowerCase()}_of_${suitName}.png`;
 
 }
-
-// 定义 displayHands 函数 (可能不再需要完整显示所有玩家手牌)
-// 保留部分用于显示比牌结果时展示牌型
-function displayHands(hands) {
-    // 这个函数在显示整理牌型阶段可能不再需要完整功能，
-    // 保留用于在比牌结果中显示玩家整理好的手牌
-}
-
 
 // 定义 displayMyOriginalHand 函数
 function displayMyOriginalHand(hand) {
@@ -109,9 +101,8 @@ function displayMyOriginalHand(hand) {
          if (filename) {
              cardDiv.style.backgroundImage = `url('/images/${filename}')`;
          } else {
-             // 如果文件名生成失败，可以使用默认图片或显示错误信息
-             cardDiv.style.backgroundColor = 'gray';
-             cardDiv.textContent = `${card.rank}${card.suit}`; // 显示牌的文本信息
+             cardDiv.classList.add('text-only'); // 添加一个类以便设置文本样式
+             cardDiv.textContent = `${card.rank}${card.suit}`;
          }
 
         cardDiv.dataset.rank = card.rank;
@@ -140,10 +131,6 @@ function displayOtherPlayersBacks() {
                const cardPileDiv = document.createElement('div');
                cardPileDiv.classList.add('card-pile');
                cardPileDiv.classList.add('back');
-               cardPileDiv.style.width = '80px';
-               cardPileDiv.style.height = '120px';
-               cardPileDiv.style.position = 'relative';
-               cardPileDiv.style.border = '1px solid #ccc';
                cardsContainer.appendChild(cardPileDiv);
            }
       }
@@ -157,7 +144,7 @@ function addCardToSection(card, sectionElement) {
      if (filename) {
         cardDiv.style.backgroundImage = `url('/images/${filename}')`;
      } else {
-         cardDiv.style.backgroundColor = 'gray';
+         cardDiv.classList.add('text-only');
          cardDiv.textContent = `${card.rank}${card.suit}`;
      }
      cardDiv.dataset.rank = card.rank;
@@ -181,12 +168,10 @@ function removeCardFromOriginalHand(card) {
     cardsInOriginalHand.forEach(cardDiv => {
         if (cardDiv.dataset.rank === card.rank && cardDiv.dataset.suit === card.suit) {
             cardDiv.remove();
-            // 找到并在 myHand 数组中移除对应的牌
             const index = myHand.findIndex(c => c.rank === card.rank && c.suit === card.suit);
              if (index !== -1) {
                  myHand.splice(index, 1);
              }
-            // 移除后退出循环，因为牌点和花色组合是唯一的
             return;
         }
     });
@@ -198,19 +183,16 @@ function removeCardFromArrangedHand(card) {
          const index = arrangedMyHand[section].findIndex(c => c.rank === card.rank && c.suit === card.suit);
           if (index !== -1) {
               arrangedMyHand[section].splice(index, 1);
-               // 同时从 DOM 中移除对应的牌元素
                const sectionElement = document.getElementById(`${section}-section`).querySelector('.cards');
                if (sectionElement) {
                     const cardsInSection = sectionElement.querySelectorAll('.card');
                     cardsInSection.forEach(cardDiv => {
                         if (cardDiv.dataset.rank === card.rank && cardDiv.dataset.suit === card.suit) {
                             cardDiv.remove();
-                             // 移除后退出循环
                             return;
                         }
                     });
                }
-               // 移除后退出外层循环
                return;
           }
      }
@@ -237,7 +219,7 @@ function submitArrangement() {
                  displayGameResults(data.results);
                  const arrangeArea = document.getElementById('arrange-area');
                  const startGameButton = document.getElementById('start-game-button');
-                 const myOriginalHandArea = document.getElementById('my-original-hand'); // 隐藏我的手牌区域
+                 const myOriginalHandArea = document.getElementById('my-original-hand');
                  if(arrangeArea) arrangeArea.style.display = 'none';
                  if(startGameButton) startGameButton.style.display = 'block';
                  if(myOriginalHandArea) myOriginalHandArea.style.display = 'none';
@@ -246,7 +228,7 @@ function submitArrangement() {
             } else {
                 alert("手牌已提交，等待其他玩家...");
                 const arrangeArea = document.getElementById('arrange-area');
-                 if(arrangeArea) arrangeArea.style.pointerEvents = 'none';
+                 if(arrangeArea) arrangeArea.style.pointerEvents = 'none'; // 禁用交互
             }
         } else {
             alert("提交手牌失败：" + data.message);
@@ -265,7 +247,6 @@ function displayGameResults(results) {
      results.forEach(playerResult => {
           resultsHtml += `<h3>${playerResult.playerId}</h3>`;
           resultsHtml += `<p>得分: ${playerResult.score}</p>`;
-          // TODO: 显示整理好的手牌和牌型信息
            resultsHtml += `<div class="arranged-hand-result">`;
            resultsHtml += `<h4>头道 (${playerResult.arrangedHand.head && playerResult.arrangedHand.head.length > 0 ? getHandType(playerResult.arrangedHand.head).type : '无牌'})</h4><div class="cards"></div>`;
            resultsHtml += `<h4>中道 (${playerResult.arrangedHand.middle && playerResult.arrangedHand.middle.length > 0 ? getHandType(playerResult.arrangedHand.middle).type : '无牌'})</h4><div class="cards"></div>`;
@@ -284,13 +265,11 @@ function displayGameResults(results) {
 
      // 在结果区域显示每个玩家整理好的手牌图片
      results.forEach(playerResult => {
-          const arrangedHandResultDiv = resultsArea.querySelector(`.arranged-hand-result`);
+          const arrangedHandResultDiv = resultsArea.querySelector(`#results-area h3:contains("${playerResult.playerId}") + p + div.arranged-hand-result`);
           if (arrangedHandResultDiv) {
-               // 使用更精确的选择器
-               const headCardsContainer = resultsArea.querySelector(`#results-area h3:contains("${playerResult.playerId}") + p + div.arranged-hand-result h4:contains("头道") + .cards`);
-               const middleCardsContainer = resultsArea.querySelector(`#results-area h3:contains("${playerResult.playerId}") + p + div.arranged-hand-result h4:contains("中道") + .cards`);
-               const tailCardsContainer = resultsArea.querySelector(`#results-area h3:contains("${playerResult.playerId}") + p + div.arranged-hand-result h4:contains("尾道") + .cards`);
-
+               const headCardsContainer = arrangedHandResultDiv.querySelector('h4:contains("头道") + .cards');
+               const middleCardsContainer = arrangedHandResultDiv.querySelector('h4:contains("中道") + .cards');
+               const tailCardsContainer = arrangedHandResultDiv.querySelector('h4:contains("尾道") + .cards');
 
                if (headCardsContainer && playerResult.arrangedHand.head) {
                    playerResult.arrangedHand.head.forEach(card => {
@@ -300,10 +279,9 @@ function displayGameResults(results) {
                         if (filename) {
                            cardDiv.style.backgroundImage = `url('/images/${filename}')`;
                         } else {
-                            cardDiv.style.backgroundColor = 'gray';
+                            cardDiv.classList.add('text-only');
                             cardDiv.textContent = `${card.rank}${card.suit}`;
                         }
-
                        headCardsContainer.appendChild(cardDiv);
                    });
                }
@@ -315,7 +293,7 @@ function displayGameResults(results) {
                          if (filename) {
                             cardDiv.style.backgroundImage = `url('/images/${filename}')`;
                          } else {
-                            cardDiv.style.backgroundColor = 'gray';
+                            cardDiv.classList.add('text-only');
                             cardDiv.textContent = `${card.rank}${card.suit}`;
                          }
                         middleCardsContainer.appendChild(cardDiv);
@@ -329,7 +307,7 @@ function displayGameResults(results) {
                            if (filename) {
                               cardDiv.style.backgroundImage = `url('/images/${filename}')`;
                            } else {
-                                cardDiv.style.backgroundColor = 'gray';
+                                cardDiv.classList.add('text-only');
                                 cardDiv.textContent = `${card.rank}${card.suit}`;
                            }
                            tailCardsContainer.appendChild(cardDiv);
@@ -346,8 +324,6 @@ function displayGameResults(results) {
 // TODO: 实现 getHandType 函数 (前端用于显示牌型名称)
 // 这需要与后端的牌型判断逻辑一致
 function getHandType(hand) {
-     // 这是一个前端的简化版本，只用于显示牌型名称
-     // 完整的判断逻辑在后端
      if (!hand || hand.length === 0) return { type: '无牌' };
 
      if (hand.length === 3) {
@@ -365,7 +341,7 @@ function getHandType(hand) {
           if (isPair(hand)) return { type: '对子' };
          return { type: '散牌' };
      }
-     return { type: '无效牌型' }; // 或其他默认值
+     return { type: '无效牌型' };
 }
 
 // 前端简化牌型判断函数 (只用于显示名称) - 与后端的逻辑保持一致
@@ -413,7 +389,6 @@ function isStraight(hand) {
         }
     }
 
-     // 处理 A-2-3-4-5 的顺子
      if (!consecutive && hand.length === 5) {
           const ranksAceLow = {
                '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9,
@@ -466,11 +441,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const startGameButton = document.getElementById('start-game-button');
   const gameContainer = document.getElementById('game-container');
 
+  // 创建游戏标题元素并添加到 gameContainer
+  const gameTitleDiv = document.createElement('div');
+  gameTitleDiv.id = 'game-title';
+  gameTitleDiv.innerHTML = '<h1>十三水游戏</h1>';
+  gameContainer.appendChild(gameTitleDiv);
+
+
   // 创建玩家手牌区域的容器并添加到 gameContainer
   const playerAreas = {};
   playerAreas['top'] = createPlayerArea('player-top', '玩家 2');
   playerAreas['left'] = createPlayerArea('player-left', '玩家 3');
-  // playerAreas['center'] = createPlayerArea('player-center', '玩家 1 (您)'); // 自己的手牌不再单独创建一个玩家区域，而是显示在 #my-original-hand
   playerAreas['right'] = createPlayerArea('player-right', '玩家 4');
 
   // 创建牌桌区域并添加到 gameContainer
@@ -553,34 +534,3 @@ document.addEventListener('DOMContentLoaded', () => {
               addCardToSection(droppedCard, section);
                removeCardFromOriginalHand(droppedCard);
           } else {
-              alert("这个位置不能放这张牌！");
-          }
-
-           console.log("整理好的手牌:", arrangedMyHand);
-      });
-  });
-
-   // 允许将牌拖回原始手牌区域 (在 DOMContentLoaded 内部获取元素并绑定事件)
-    const myOriginalHandCardsContainer = document.getElementById('my-original-hand').querySelector('.cards');
-    if (myOriginalHandCardsContainer) {
-        myOriginalHandCardsContainer.addEventListener('dragover', (event) => {
-             event.preventDefault();
-        });
-
-        myOriginalHandCardsContainer.addEventListener('drop', (event) => {
-            event.preventDefault();
-            const cardData = JSON.parse(event.dataTransfer.getData('text/plain'));
-            const droppedCard = { rank: cardData.rank, suit: cardData.suit };
-            const fromArrange = event.dataTransfer.getData('text/from-arrange') === 'true';
-
-            if (fromArrange) {
-                myHand.push(droppedCard);
-                addCardToSection(droppedCard, myOriginalHandCardsContainer);
-                removeCardFromArrangedHand(droppedCard);
-            }
-        });
-    }
-
-
-  // TODO: 添加更多客户端逻辑
-});
