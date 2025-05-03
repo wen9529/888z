@@ -1,4 +1,4 @@
-/* 锄大地游戏 CSS 样式 */
+/* 游戏 CSS 样式 */
 body {
   font-family: sans-serif;
   text-align: center;
@@ -18,15 +18,16 @@ h1 {
 
 #game-container {
   display: grid;
-  /* 锄大地上下左右布局 */
-  grid-template-columns: 1fr 2fr 1fr; /* 左侧玩家/空白，中央区域，右侧玩家/空白 */
-  grid-template-rows: auto 1fr 1fr auto auto; /* 标题，顶部玩家区域，中央区域（牌桌），底部玩家区域，控制区域 */
-  gap: 10px;
+  /* 上下左右布局，调整列宽和行高 */
+  grid-template-columns: 0.5fr 2fr 0.5fr; /* 缩小左右两侧的空白 */
+  grid-template-rows: auto 1fr 1fr auto auto; /* 保持行高不变 */
+  gap: 5px; /* 缩小间距 */
   width: 98%;
   max-width: 1200px;
-  margin: 20px auto;
-  padding: 10px;
+  margin: 10px auto; /* 缩小外边距 */
+  padding: 5px; /* 缩小内边距 */
   box-sizing: border-box;
+  border: 1px solid #ccc; /* 添加边框，更容易观察布局 */
 }
 
 #game-title {
@@ -36,13 +37,14 @@ h1 {
 }
 
 .player-area {
-  padding: 5px;
+  padding: 3px; /* 缩小内边距 */
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start; /* 让内容靠顶部对齐 */
   background-color: rgba(255, 255, 255, 0.5);
+  border: 1px solid #aaa; /* 添加边框 */
 }
 
 /* 玩家布局 */
@@ -51,38 +53,42 @@ h1 {
   grid-row: 2 / 3;
   align-self: start;
   justify-self: center;
+  width: 80%; /* 调整宽度 */
 }
 
 #player-left {
   grid-column: 1 / 2;
-  grid-row: 3 / 4; /* 左侧玩家在中央区域左侧 */
+  grid-row: 3 / 4;
   align-self: center;
   justify-self: start;
+  height: 80%; /* 调整高度 */
 }
 
 #player-right {
   grid-column: 3 / 4;
-  grid-row: 3 / 4; /* 右侧玩家在中央区域右侧 */
+  grid-row: 3 / 4;
   align-self: center;
   justify-self: end;
+  height: 80%; /* 调整高度 */
 }
 
 #player-bottom {
-    grid-column: 1 / 4; /* 底部玩家跨越所有列 */
-    grid-row: 4 / 5; /* 在中央区域下方 */
+    grid-column: 1 / 4;
+    grid-row: 4 / 5;
     align-self: end;
     justify-self: center;
-    margin-top: 20px;
+    margin-top: 10px; /* 缩小上边距 */
+    width: 90%; /* 调整宽度 */
 }
 
 
 #card-table {
     grid-column: 2 / 3;
-    grid-row: 3 / 4; /* 牌桌在中央区域 */
+    grid-row: 3 / 4;
     background-color: #8B4513;
     border-radius: 50%;
-    width: 300px;
-    height: 150px;
+    width: 250px; /* 缩小牌桌 */
+    height: 120px; /* 缩小牌桌 */
     align-self: center;
     justify-self: center;
     position: relative;
@@ -92,60 +98,62 @@ h1 {
 
 #start-game-button {
     grid-column: 2 / 3;
-    grid-row: 3 / 4; /* 放在牌桌上方 */
+    grid-row: 3 / 4;
     align-self: center;
     justify-self: center;
     z-index: 2;
-    padding: 10px 20px;
-    font-size: 1.2em;
+    padding: 8px 15px; /* 缩小按钮 */
+    font-size: 1em;
     cursor: pointer;
 }
 
 #player-controls {
-    margin-top: 10px;
+    margin-top: 8px; /* 缩小上边距 */
 }
 
 #player-controls button {
-    padding: 8px 15px;
-    margin: 0 5px;
-    font-size: 1em;
+    padding: 6px 12px; /* 缩小按钮 */
+    margin: 0 3px; /* 缩小间距 */
+    font-size: 0.9em;
     cursor: pointer;
 }
 
 
 .player-area h3 {
-  margin-top: 5px;
-  margin-bottom: 5px;
+  margin-top: 3px; /* 缩小上边距 */
+  margin-bottom: 3px; /* 缩小下边距 */
+  font-size: 1em; /* 缩小字体 */
 }
 
 .cards {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
-  min-height: 100px; /* 确保卡牌容器有一定高度 */
+  min-height: 80px; /* 缩小卡牌容器高度 */
   border: 1px dashed #ccc;
-  padding: 5px;
+  padding: 3px; /* 缩小内边距 */
   background-color: #fff;
   border-radius: 5px;
+  overflow: auto; /* 添加滚动条，避免内容溢出 */
 }
 
 .card {
-  width: 60px;
-  height: 90px;
+  width: 50px; /* 缩小卡牌 */
+  height: 75px; /* 缩小卡牌 */
   border: 1px solid #ccc;
-  margin: 3px;
+  margin: 2px; /* 缩小外边距 */
   background-size: cover;
   background-position: center;
-  border-radius: 5px;
-  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
-  cursor: pointer; /* 改为 pointer，表示可点击选择 */
+  border-radius: 4px; /* 缩小圆角 */
+  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3); /* 缩小阴影 */
+  cursor: pointer;
   background-color: #fff;
-  transition: transform 0.1s ease; /* 添加过渡效果 */
+  transition: transform 0.1s ease;
 }
 
 .card.selected {
-    transform: translateY(-10px); /* 选中时上移 */
-    border-color: blue; /* 选中时边框变色 */
+    transform: translateY(-8px); /* 缩小上移距离 */
+    border-color: blue;
 }
 
 
@@ -154,12 +162,12 @@ h1 {
 }
 
 .card-pile {
-    width: 80px;
-    height: 120px;
+    width: 60px; /* 缩小牌堆 */
+    height: 90px; /* 缩小牌堆 */
     background-size: cover;
     background-position: center;
-    border-radius: 5px;
-    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+    border-radius: 4px; /* 缩小圆角 */
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3); /* 缩小阴影 */
 }
 
 /* 针对靠边玩家的卡牌布局调整 */
@@ -171,39 +179,41 @@ h1 {
 
 #message-area {
     grid-column: 1 / 4;
-    grid-row: 5 / 6; /* 放在底部控制区域下方 */
-    margin-top: 20px;
+    grid-row: 5 / 6;
+    margin-top: 10px; /* 缩小上边距 */
     text-align: center;
     color: red;
     font-weight: bold;
+    font-size: 0.9em; /* 缩小字体 */
 }
 
 #current-play {
-    grid-column: 2 / 3; /* 放在牌桌上方 */
+    grid-column: 2 / 3;
     grid-row: 3 / 4;
     align-self: center;
     justify-self: center;
-    z-index: 0; /* 确保在牌桌下方 */
-    background-color: rgba(255, 255, 255, 0.7); /* 半透明背景 */
-    padding: 10px;
+    z-index: 0;
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 8px; /* 缩小内边距 */
     border-radius: 8px;
-    display: none; /* 默认隐藏 */
+    display: none;
     flex-direction: column;
     align-items: center;
 }
 
 #current-play .cards {
-    min-height: 80px;
+    min-height: 60px; /* 缩小卡牌容器高度 */
 }
 
 #turn-indicator {
     grid-column: 2 / 3;
-    grid-row: 2 / 3; /* 放在顶部玩家区域下方，牌桌上方 */
+    grid-row: 2 / 3;
     align-self: end;
     justify-self: center;
-    margin-bottom: 10px;
+    margin-bottom: 8px; /* 缩小下边距 */
     font-weight: bold;
-    display: none; /* 默认隐藏 */
+    font-size: 0.9em; /* 缩小字体 */
+    display: none;
 }
 
 /* Add styling for card text when image not found */
@@ -211,6 +221,9 @@ h1 {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 0.8em;
+    font-size: 0.7em; /* 缩小字体 */
     color: #333;
+    padding: 2px; /* 缩小内边距 */
+    text-align: center;
+    word-break: break-all; /* 防止文本溢出 */
 }
