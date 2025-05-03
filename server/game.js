@@ -1,18 +1,40 @@
 // 游戏逻辑
 
 // 定义牌的花色和点数
-const suits = ['C', 'D', 'H', 'S']; // 梅花, 方块, 红桃, 黑桃
-const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A']; // 点数 (T 代表 10)
+const suits = {
+  'C': 'clubs',
+  'D': 'diamonds',
+  'H': 'hearts',
+  'S': 'spades'
+}; // 梅花, 方块, 红桃, 黑桃
+
+const ranks = {
+  '2': '2', '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
+  'T': '10', // T 代表 10
+  'J': 'jack',
+  'Q': 'queen',
+  'K': 'king',
+  'A': 'ace'
+}; // 点数
 
 // 生成一副完整的牌
 function createDeck() {
   const deck = [];
-  for (const suit of suits) {
-    for (const rank of ranks) {
-      deck.push(rank + suit); // 例如：'2C', 'AD'
+  for (const suitAbbr in suits) {
+    for (const rankAbbr in ranks) {
+      deck.push({ rank: rankAbbr, suit: suitAbbr }); // 例如：{ rank: '2', suit: 'C' }
     }
   }
   return deck;
+}
+
+// 将牌信息转换为文件名
+function getCardFilename(card) {
+  if (card.rank === 'T') {
+    return `10_of_${suits[card.suit]}.png`;
+  } else {
+    return `${ranks[card.rank]}_of_${suits[card.suit]}.png`;
+  }
 }
 
 // 洗牌 (Fisher-Yates 洗牌算法)
@@ -59,5 +81,6 @@ module.exports = {
   shuffleDeck,
   dealCards,
   checkCardType,
-  compareHands
+  compareHands,
+  getCardFilename // 导出获取文件名的函数
 };
