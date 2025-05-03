@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>锄大地游戏</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div id="game-container">
+    <div id="game-title">
+      <h1>锄大地游戏</h1>
+    </div>
+
+    <div class="player-area" id="player-top">
+      <h3>玩家 2</h3>
+      <div class="cards"></div>
+    </div>
+
+    <div class="player-area" id="player-left">
+      <h3>玩家 3</h3>
+      <div class="cards"></div>
+    </div>
+
+    <div id="card-table"></div>
+
+    <div class="player-area" id="player-right">
+      <h3>玩家 4</h3>
+      <div class="cards"></div>
+    </div>
+
+    <div class="player-area" id="player-bottom">
+      <h3>玩家 1 (您)</h3>
+      <div class="cards"></div>
+       <div id="player-controls">
+           <button id="play-cards-button">出牌</button>
+           <button id="pass-turn-button">过牌</button>
+       </div>
+    </div>
+
+    <button id="start-game-button">开始游戏</button>
+
+    <div id="message-area"></div>
+    <div id="current-play">
+        <h4>当前桌面上的牌:</h4>
+        <div class="cards"></div>
+    </div>
+     <div id="turn-indicator">当前回合: </div>
+
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/script.js"></script>
+</body>
+</html>
