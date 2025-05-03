@@ -9,6 +9,5 @@
   "dependencies": {
     "express": "^4.18.2",
     "ejs": "^3.1.9"
-    // 您可能需要添加其他依赖，例如 websocket 库
   }
 }
