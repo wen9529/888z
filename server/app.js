@@ -1,9 +1,9 @@
 const express = require('express');
 const path = require('path');
-const gameRoutes = require('./routes/game');
+const indexRouter = require('./routes/index'); // 引入路由
 
 const app = express();
-const port = process.env.PORT || 3000; // 设置端口
+const port = process.env.PORT || 3000;
 
 // 设置静态文件目录
 app.use(express.static(path.join(__dirname, '../public')));
@@ -17,7 +17,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // 路由
-app.use('/', gameRoutes);
+app.use('/', indexRouter);
 
 // 启动服务器
 app.listen(port, () => {
