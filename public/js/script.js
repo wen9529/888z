@@ -2,14 +2,15 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   const startGameButton = document.getElementById('start-game-button');
-  const gameContainer = document.getElementById('game-container'); // 获取游戏容器
+  const gameContainer = document.getElementById('game-container');
 
   // 创建玩家手牌区域的容器
   const playerAreas = {};
-  playerAreas['top'] = createPlayerArea('player-top', '玩家 2');
-  playerAreas['left'] = createPlayerArea('player-left', '玩家 3');
+  playerAreas['top'] = createPlayerArea('player-top', '玩家 2'); // 顶部玩家
+  playerAreas['left'] = createPlayerArea('player-left', '玩家 3'); // 左侧玩家
   playerAreas['center'] = createPlayerArea('player-center', '玩家 1 (您)'); // 自己的手牌
-  playerAreas['right'] = createPlayerArea('player-right', '玩家 4');
+  playerAreas['right'] = createPlayerArea('player-right', '玩家 4'); // 右侧玩家
+
 
   // 将玩家区域添加到游戏容器
   for (const position in playerAreas) {
@@ -24,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const playerDiv = document.createElement('div');
       playerDiv.id = id;
       playerDiv.classList.add('player-area');
-      playerDiv.innerHTML = `<h3>${title}</h3><div class="cards"></div>`;
+      playerDiv.innerHTML = `<h3>${title}</h3><div class="cards"></div>`; // 保持cards容器，用于显示自己的手牌或牌堆
       return playerDiv;
   }
 
@@ -63,35 +64,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
     hands.forEach((hand, playerIndex) => {
         let targetArea;
-        let showBack = false; // 默认显示牌正面
+        let showFullHand = false; // 默认不显示完整手牌
 
-        // 根据玩家索引确定显示区域和是否显示牌背面
+        // 根据玩家索引确定显示区域和是否显示完整手牌
         if (playerIndex === 0) { // 玩家 1 (自己)
             targetArea = playerAreas['center'].querySelector('.cards');
+            showFullHand = true;
         } else if (playerIndex === 1) { // 玩家 2 (顶部)
             targetArea = playerAreas['top'].querySelector('.cards');
-            showBack = true;
         } else if (playerIndex === 2) { // 玩家 3 (左侧)
             targetArea = playerAreas['left'].querySelector('.cards');
-            showBack = true;
         } else if (playerIndex === 3) { // 玩家 4 (右侧)
             targetArea = playerAreas['right'].querySelector('.cards');
-            showBack = true;
         }
 
-        hand.forEach(card => {
-            const cardDiv = document.createElement('div');
-            cardDiv.classList.add('card');
-
-            if (showBack) {
-                cardDiv.classList.add('back'); // 添加 'back' 类来显示牌背面
-            } else {
+        if (showFullHand) {
+            // 显示自己的完整手牌
+            hand.forEach(card => {
+                const cardDiv = document.createElement('div');
+                cardDiv.classList.add('card');
                 const filename = getCardFilename(card);
                 cardDiv.style.backgroundImage = `url('/images/${filename}')`;
-            }
+                targetArea.appendChild(cardDiv);
+            });
+        } else {
+            // 为其他玩家显示一个代表牌堆的元素
+            const cardPileDiv = document.createElement('div');
+            cardPileDiv.classList.add('card-pile'); // 添加新的类来表示牌堆
+            cardPileDiv.classList.add('back'); // 使用牌背面样式
+             // 可以根据需要调整牌堆的大小
+            cardPileDiv.style.width = '80px';
+            cardPileDiv.style.height = '120px';
+            cardPileDiv.style.position = 'relative'; // 为了实现堆叠效果
+            cardPileDiv.style.border = '1px solid #ccc'; // 添加边框
 
-            targetArea.appendChild(cardDiv);
-        });
+            // 可以通过添加多个元素或使用阴影来模拟堆叠效果
+            // 这里简单地只添加一个元素
+            targetArea.appendChild(cardPileDiv);
+        }
     });
   }
 
