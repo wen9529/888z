@@ -2,20 +2,67 @@
 body {
   font-family: sans-serif;
   text-align: center;
+  margin: 0; /* 移除默认的 body margin */
+  padding: 0;
+  background-color: #f0f0f0;
 }
 
-#game-area {
-  margin-top: 20px;
+h1 {
+  margin-top: 10px;
 }
 
-.player-hand {
-  margin-bottom: 20px;
+#game-container {
+  display: grid;
+  grid-template-columns: 1fr 3fr 1fr; /* 左中右三列布局 */
+  grid-template-rows: 1fr 3fr 1fr; /* 上中下三行布局 */
+  gap: 10px; /* 网格间距 */
+  width: 90%; /* 游戏区域宽度 */
+  max-width: 1200px; /* 最大宽度 */
+  margin: 20px auto; /* 居中 */
+  /* border: 1px solid #ccc; /* 方便调试时查看布局 */
+}
+
+#start-game-button {
+  grid-column: 2 / 3; /* 按钮放在中间列 */
+  grid-row: 1 / 2; /* 按钮放在第一行 */
+  align-self: center; /* 垂直居中 */
+}
+
+.player-area {
   border: 1px solid #ccc;
   padding: 10px;
+  background-color: #fff;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.player-hand h3 {
+/* 玩家布局 */
+#player-top {
+  grid-column: 2 / 3;
+  grid-row: 1 / 2;
+}
+
+#player-left {
+  grid-column: 1 / 2;
+  grid-row: 2 / 3;
+}
+
+#player-center { /* 自己的手牌 */
+  grid-column: 2 / 3;
+  grid-row: 3 / 4;
+}
+
+#player-right {
+  grid-column: 3 / 4;
+  grid-row: 2 / 3;
+}
+
+
+.player-area h3 {
   margin-top: 0;
+  margin-bottom: 10px;
 }
 
 .cards {
@@ -25,11 +72,16 @@ body {
 }
 
 .card {
-  width: 60px; /* 调整扑克牌大小 */
+  width: 60px;
   height: 90px;
   border: 1px solid #ccc;
   margin: 3px;
   background-size: cover;
   background-position: center;
   border-radius: 5px;
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.card.back {
+  background-image: url('/images/back.png'); /* 扑克牌背面图片 */
 }
