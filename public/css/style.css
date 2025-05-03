@@ -1,0 +1,19 @@
+/* 您的 CSS 样式 */
+body {
+  font-family: sans-serif;
+}
+
+#game-area {
+  /* 游戏区域样式 */
+}
+
+.card {
+  /* 扑克牌样式 */
+  width: 80px;
+  height: 120px;
+  border: 1px solid #ccc;
+  margin: 5px;
+  display: inline-block;
+  background-size: cover;
+  background-position: center;
+}
