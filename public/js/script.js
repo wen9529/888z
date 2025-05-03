@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   playerAreas['center'] = createPlayerArea('player-center', '玩家 1 (您)'); // 自己的手牌
   playerAreas['right'] = createPlayerArea('player-right', '玩家 4'); // 右侧玩家
 
+
   // 创建牌桌区域
   const cardTableDiv = document.createElement('div');
   cardTableDiv.id = 'card-table';
@@ -23,7 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 
-  startGameButton.addEventListener('click', startGame);
+  // 确保按钮元素存在并绑定事件
+  if (startGameButton) {
+      startGameButton.addEventListener('click', startGame);
+  } else {
+      console.error("Start game button not found!");
+  }
+
 
   // 创建玩家手牌区域的函数
   function createPlayerArea(id, title) {
@@ -31,8 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
       playerDiv.id = id;
       playerDiv.classList.add('player-area');
       playerDiv.innerHTML = `<h3>${title}</h3><div class="cards"></div>`;
-      // TODO: 可以添加头像或玩家信息区域
-      // playerDiv.innerHTML = `<h3>${title}</h3><div class="player-info"></div><div class="cards"></div>`;
       return playerDiv;
   }
 
@@ -71,9 +76,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     hands.forEach((hand, playerIndex) => {
         let targetArea;
-        let showFullHand = false; // 默认不显示完整手牌
+        let showFullHand = false;
 
-        // 根据玩家索引确定显示区域和是否显示完整手牌
         if (playerIndex === 0) { // 玩家 1 (自己)
             targetArea = playerAreas['center'].querySelector('.cards');
             showFullHand = true;
@@ -86,7 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (showFullHand) {
-            // 显示自己的完整手牌
             hand.forEach(card => {
                 const cardDiv = document.createElement('div');
                 cardDiv.classList.add('card');
@@ -95,15 +98,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 targetArea.appendChild(cardDiv);
             });
         } else {
-            // 为其他玩家显示一个代表牌堆的元素
             const cardPileDiv = document.createElement('div');
-            cardPileDiv.classList.add('card-pile'); // 添加新的类来表示牌堆
-            cardPileDiv.classList.add('back'); // 使用牌背面样式
-             // 可以根据需要调整牌堆的大小
+            cardPileDiv.classList.add('card-pile');
+            cardPileDiv.classList.add('back');
             cardPileDiv.style.width = '80px';
             cardPileDiv.style.height = '120px';
-            cardPileDiv.style.position = 'relative'; // 为了实现堆叠效果
-            cardPileDiv.style.border = '1px solid #ccc'; // 添加边框
+            cardPileDiv.style.position = 'relative';
+            cardPileDiv.style.border = '1px solid #ccc';
 
             targetArea.appendChild(cardPileDiv);
         }
