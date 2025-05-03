@@ -534,3 +534,34 @@ document.addEventListener('DOMContentLoaded', () => {
               addCardToSection(droppedCard, section);
                removeCardFromOriginalHand(droppedCard);
           } else {
+              alert("这个位置不能放这张牌！");
+          } // 确保这里的花括号是闭合的
+
+      }); // 确保这里的花括号是闭合的
+  }); // 确保这里的花括号是闭合的
+
+
+   // 允许将牌拖回原始手牌区域 (在 DOMContentLoaded 内部获取元素并绑定事件)
+    const myOriginalHandCardsContainer = document.getElementById('my-original-hand').querySelector('.cards');
+    if (myOriginalHandCardsContainer) {
+        myOriginalHandCardsContainer.addEventListener('dragover', (event) => {
+             event.preventDefault();
+        });
+
+        myOriginalHandCardsContainer.addEventListener('drop', (event) => {
+            event.preventDefault();
+            const cardData = JSON.parse(event.dataTransfer.getData('text/plain'));
+            const droppedCard = { rank: cardData.rank, suit: cardData.suit };
+            const fromArrange = event.dataTransfer.getData('text/from-arrange') === 'true';
+
+            if (fromArrange) {
+                myHand.push(droppedCard);
+                addCardToSection(droppedCard, myOriginalHandCardsContainer);
+                removeCardFromArrangedHand(droppedCard);
+            }
+        });
+    }
+
+
+  // TODO: 添加更多客户端逻辑
+}); // 确保这里的花括号是闭合的
