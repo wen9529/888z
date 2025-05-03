@@ -8,6 +8,7 @@ let myPlayerId = null;
 let myPosition = null;
 let playerList = [];
 let playerOrder = [];
+let currentRoomId = null; // 存储当前所在的房间 ID
 
 const startGameButton = document.getElementById('start-game-button');
 const playCardsButton = document.getElementById('play-cards-button');
@@ -17,9 +18,12 @@ const currentPlayContainer = document.getElementById('current-play').querySelect
 const messageArea = document.getElementById('message-area');
 const turnIndicator = document.getElementById('turn-indicator');
 const currentPlayArea = document.getElementById('current-play');
+const roomIdInput = document.getElementById('room-id-input');
+const joinRoomButton = document.getElementById('join-room-button');
+const roomSelectionArea = document.getElementById('room-selection');
 
 
-// 定义 getCardFilename 函数，根据您的图片命名规则生成文件名
+// 定义 getCardFilename 函数 (与之前相同)
 function getCardFilename(card) {
     const suits = {
       'C': 'clubs',
@@ -29,7 +33,7 @@ function getCardFilename(card) {
     };
     const ranks = {
       '3': '3', '4': '4', '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
-      'T': '10', // 'T' 对应 '10'
+      'T': '10',
       'J': 'jack',
       'Q': 'queen',
       'K': 'king',
@@ -49,22 +53,21 @@ function getCardFilename(card) {
           return '';
      }
 
-     // 确保文件名格式与您的 /public/images 文件夹中的图片一致
      return `${rankName.toLowerCase()}_of_${suitName}.png`;
 
 }
 
 
-// 显示手牌
+// 显示手牌 (与之前相同)
 function displayHand(hand, container) {
-    container.innerHTML = ''; // 清空
+    container.innerHTML = '';
     hand.forEach(card => {
         const cardDiv = document.createElement('div');
         cardDiv.classList.add('card');
         const filename = getCardFilename(card);
          if (filename) {
              cardDiv.style.backgroundImage = `url('/images/${filename}')`;
-             cardDiv.title = `${card.rank}${card.suit}`; // 添加 title 属性，鼠标悬停时显示牌面
+             cardDiv.title = `${card.rank}${card.suit}`;
          } else {
              cardDiv.classList.add('text-only');
              cardDiv.textContent = `${card.rank}${card.suit}`;
@@ -75,7 +78,7 @@ function displayHand(hand, container) {
     });
 }
 
-// 显示其他玩家的牌背面或数量
+// 显示其他玩家的牌背面或数量 (与之前相同)
 function displayOtherPlayersInfo(playersInfo) {
     const playerAreas = {
         'top': document.getElementById('player-top'),
@@ -87,14 +90,12 @@ function displayOtherPlayersInfo(playersInfo) {
         const playerArea = playerAreas[position];
         if (playerArea) {
              const cardsContainer = playerArea.querySelector('.cards');
-              if (cardsContainer) cardsContainer.innerHTML = ''; // 清空
+              if (cardsContainer) cardsContainer.innerHTML = '';
 
              const playerInfo = playersInfo.find(p => p.position === position);
               if (playerInfo) {
-                   // 显示玩家名称或编号
                    playerArea.querySelector('h3').textContent = `玩家 ${playerList.findIndex(p => p.id === playerInfo.id) + 1}`;
 
-                   // 显示牌背面或数量
                    if (cardsContainer && playerInfo.handSize !== undefined) {
                        for (let i = 0; i < playerInfo.handSize; i++) {
                             const cardPileDiv = document.createElement('div');
@@ -156,6 +157,7 @@ socket.on('your_hand', (hand) => {
 socket.on('game_started', (data) => {
      console.log('游戏开始，起始玩家：', data.startPlayerId);
      startGameButton.style.display = 'none';
+     roomSelectionArea.style.display = 'none'; // 隐藏房间选择区域
      turnIndicator.style.display = 'block';
      currentPlayArea.style.display = 'flex';
      playerOrder = data.playerOrder;
@@ -169,10 +171,7 @@ socket.on('cards_played', (data) => {
      displayHand(data.play, currentPlayContainer);
       messageArea.textContent = `${getPlayerName(data.playerId)} 出牌`;
 
-
-     // 更新出牌玩家的手牌数量 (如果不是自己)
      if (data.playerId !== myPlayerId) {
-          // 从 playerList 查找玩家信息
           const playerInfo = playerList.find(p => p.id === data.playerId);
            if (playerInfo && playerInfo.position) {
                const playerArea = document.getElementById(`player-${playerInfo.position}`);
@@ -180,7 +179,6 @@ socket.on('cards_played', (data) => {
                      const cardsContainer = playerArea.querySelector('.cards');
                       if (cardsContainer) {
                            cardsContainer.innerHTML = '';
-                           // 只显示背面牌数量
                            for (let i = 0; i < data.handSize; i++) {
                                 const cardPileDiv = document.createElement('div');
                                 cardPileDiv.classList.add('card-pile');
@@ -191,7 +189,6 @@ socket.on('cards_played', (data) => {
                 }
            }
      } else {
-          // 如果是自己出牌，更新自己的手牌显示
            myHand = myHand.filter(card => !data.play.some(playedCard => playedCard.rank === card.rank && playedCard.suit === card.suit));
            displayHand(myHand, myHandContainer);
            selectedCards = [];
@@ -205,7 +202,6 @@ socket.on('cards_played', (data) => {
 socket.on('player_passed', (data) => {
      console.log('玩家过牌：', data.playerId);
       messageArea.textContent = `${getPlayerName(data.playerId)} 过牌`;
-      // TODO: 如果一轮结束，可能需要清空桌面牌
 });
 
 
@@ -220,6 +216,8 @@ socket.on('game_over', (data) => {
      startGameButton.style.display = 'block';
      turnIndicator.style.display = 'none';
      currentPlayArea.style.display = 'none';
+     // 游戏结束后可以显示重置按钮或者自动重置
+      // setTimeout(() => { socket.emit('request_reset'); }, 5000); // 5秒后自动重置
 });
 
 socket.on('game_reset', () => {
@@ -228,7 +226,6 @@ socket.on('game_reset', () => {
       currentPlayContainer.innerHTML = '';
       myHandContainer.innerHTML = '';
       selectedCards = [];
-      // 清空其他玩家区域并重置文本
        const playerAreas = {
             'top': document.getElementById('player-top'),
             'left': document.getElementById('player-left'),
@@ -242,12 +239,13 @@ socket.on('game_reset', () => {
                  if (cardsContainer) cardsContainer.innerHTML = '';
             }
        }
-       // 重置自己的区域文本
        document.getElementById('player-bottom').querySelector('h3').textContent = '玩家 1 (您)';
 
       turnIndicator.style.display = 'none';
       currentPlayArea.style.display = 'none';
       startGameButton.style.display = 'block';
+      roomSelectionArea.style.display = 'flex'; // 显示房间选择区域
+       currentRoomId = null; // 清空当前房间 ID
 });
 
 
@@ -256,38 +254,79 @@ socket.on('error', (message) => {
     messageArea.textContent = '错误：' + message;
 });
 
+socket.on('player_left', (data) => {
+     console.log('玩家离开：', data.id, data.position);
+     messageArea.textContent = `${getPlayerName(data.id)} 离开了`;
+     // 清空离开玩家区域的显示
+     const playerArea = document.getElementById(`player-${data.position}`);
+      if (playerArea) {
+           playerArea.querySelector('.cards').innerHTML = '';
+           playerArea.querySelector('h3').textContent = `玩家 ${Object.keys({top:'',left:'',right:''}).indexOf(data.position) + 2}`; // 重置玩家编号
+      }
+});
 
-// 更新回合指示器
+socket.on('spectating', (data) => {
+     console.log(data.message);
+     messageArea.textContent = data.message;
+     startGameButton.style.display = 'none'; // 观战模式下隐藏开始按钮
+     playCardsButton.style.display = 'none'; // 观战模式下隐藏出牌按钮
+     passTurnButton.style.display = 'none'; // 观战模式下隐藏过牌按钮
+     roomSelectionArea.style.display = 'none'; // 隐藏房间选择区域
+});
+
+
+// 更新回合指示器 (与之前相同)
 function updateTurnIndicator(playerId) {
     turnIndicator.textContent = `当前回合：${getPlayerName(playerId)}`;
 }
 
-// 根据玩家 ID 获取玩家名称 (根据 playerList 查找)
+// 根据玩家 ID 获取玩家名称 (与之前相同)
 function getPlayerName(playerId) {
     if (playerId === myPlayerId) {
         return '您';
     }
      const playerInfo = playerList.find(p => p.id === playerId);
       if (playerInfo) {
-           // 根据在玩家列表中的索引 + 1 作为编号
            return `玩家 ${playerList.findIndex(p => p.id === playerId) + 1}`;
       }
-    return '未知玩家'; // 找不到玩家信息时
+    return '未知玩家';
 }
 
 
 // 按钮事件监听
+
+if (joinRoomButton) {
+    joinRoomButton.addEventListener('click', () => {
+        const roomId = roomIdInput.value.trim();
+        if (roomId) {
+            socket.emit('join_room', roomId);
+             messageArea.textContent = `尝试加入房间：${roomId}...`;
+             roomIdInput.disabled = true; // 加入房间后禁用输入框
+             joinRoomButton.disabled = true; // 加入房间后禁用按钮
+        } else {
+            messageArea.textContent = '请输入房间号！';
+        }
+    });
+}
+
+
 if (startGameButton) {
     startGameButton.addEventListener('click', () => {
-        socket.emit('start_game');
-         messageArea.textContent = '';
+        if (currentRoomId) {
+             socket.emit('start_game');
+              messageArea.textContent = '';
+        } else {
+            messageArea.textContent = '请先加入房间！';
+        }
     });
 }
 
 if (playCardsButton) {
     playCardsButton.addEventListener('click', () => {
-        if (selectedCards.length > 0) {
+        if (currentRoomId && selectedCards.length > 0) {
             socket.emit('play_cards', selectedCards);
+        } else if (!currentRoomId) {
+             messageArea.textContent = '请先加入房间！';
         } else {
             messageArea.textContent = '请选择要出的牌！';
         }
@@ -296,17 +335,33 @@ if (playCardsButton) {
 
 if (passTurnButton) {
     passTurnButton.addEventListener('click', () => {
-        socket.emit('pass_turn');
-         selectedCards = [];
-          myHandContainer.querySelectorAll('.card').forEach(cardDiv => {
-               cardDiv.classList.remove('selected');
-          });
+        if (currentRoomId) {
+            socket.emit('pass_turn');
+             selectedCards = [];
+              myHandContainer.querySelectorAll('.card').forEach(cardDiv => {
+                   cardDiv.classList.remove('selected');
+              });
+        } else {
+             messageArea.textContent = '请先加入房间！';
+        }
     });
 }
 
 
-// 获取自己的玩家 ID
+// 获取自己的玩家 ID (连接成功后获取)
 socket.on('connect', () => {
   myPlayerId = socket.id;
   console.log('已连接，您的 ID 是：', myPlayerId);
+   messageArea.textContent = '请输入或选择房间号加入游戏';
+    roomSelectionArea.style.display = 'flex'; // 显示房间选择区域
+     startGameButton.style.display = 'none'; // 连接后隐藏开始按钮，等待加入房间
 });
+
+socket.on('disconnect', () => {
+    console.log('断开连接');
+     messageArea.textContent = '已断开连接，请刷新页面重试';
+      startGameButton.style.display = 'none';
+      playCardsButton.style.display = 'none';
+      passTurnButton.style.display = 'none';
+      turnIndicator.style.display = 'none';
+      currentPlayArea
