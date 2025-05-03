@@ -1,13 +1,13 @@
 {
-  "name": "thirteen-cards-game-v2",
+  "name": "big-two-game",
   "version": "1.0.0",
-  "description": "A Thirteen Cards web game v2",
-  "main": "server/app.js",
+  "description": "A simple Big Two game using Node.js and Socket.IO",
+  "main": "server.js",
   "scripts": {
-    "start": "node server/app.js"
+    "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "ejs": "^3.1.9"
+    "socket.io": "^4.7.4"
   }
 }
