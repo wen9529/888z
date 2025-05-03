@@ -2,7 +2,7 @@
 body {
   font-family: sans-serif;
   text-align: center;
-  margin: 0; /* 移除默认的 body margin */
+  margin: 0;
   padding: 0;
   background-color: #f0f0f0;
 }
@@ -12,57 +12,67 @@ h1 {
 }
 
 #game-container {
-  display: grid;
-  grid-template-columns: 1fr 3fr 1fr; /* 左中右三列布局 */
-  grid-template-rows: 1fr 3fr 1fr; /* 上中下三行布局 */
-  gap: 10px; /* 网格间距 */
-  width: 90%; /* 游戏区域宽度 */
-  max-width: 1200px; /* 最大宽度 */
-  margin: 20px auto; /* 居中 */
-  /* border: 1px solid #ccc; /* 方便调试时查看布局 */
+  grid-template-columns: 0.5fr 2fr 0.5fr;
+  grid-template-rows: 0.5fr 2fr 0.5fr;
+  gap: 5px;
+  width: 95%;
+  max-width: 1200px;
+  margin: 10px auto;
 }
 
 #start-game-button {
-  grid-column: 2 / 3; /* 按钮放在中间列 */
-  grid-row: 1 / 2; /* 按钮放在第一行 */
-  align-self: center; /* 垂直居中 */
+  grid-column: 2 / 3;
+  grid-row: 1 / 2;
+  align-self: center;
 }
 
 .player-area {
   border: 1px solid #ccc;
-  padding: 10px;
+  padding: 5px;
   background-color: #fff;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
 }
 
 /* 玩家布局 */
 #player-top {
-  grid-column: 2 / 3;
+  grid-column: 1 / 4;
   grid-row: 1 / 2;
+  display: flex;
+  justify-content: center;
+  align-items: center; /* 垂直居中 */
 }
 
 #player-left {
   grid-column: 1 / 2;
   grid-row: 2 / 3;
+  display: flex; /* 使用 flexbox 布局内容 */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 #player-center { /* 自己的手牌 */
   grid-column: 2 / 3;
-  grid-row: 3 / 4;
+  grid-row: 2 / 3;
 }
 
 #player-right {
   grid-column: 3 / 4;
   grid-row: 2 / 3;
+  display: flex; /* 使用 flexbox 布局内容 */
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 
 .player-area h3 {
-  margin-top: 0;
-  margin-bottom: 10px;
+  margin-top: 5px;
+  margin-bottom: 5px;
 }
 
 .cards {
@@ -72,10 +82,10 @@ h1 {
 }
 
 .card {
-  width: 60px;
-  height: 90px;
+  width: 50px;
+  height: 75px;
   border: 1px solid #ccc;
-  margin: 3px;
+  margin: 2px;
   background-size: cover;
   background-position: center;
   border-radius: 5px;
@@ -83,5 +93,17 @@ h1 {
 }
 
 .card.back {
-  background-image: url('/images/back.png'); /* 扑克牌背面图片 */
+  background-image: url('/images/back.png');
+}
+
+/* 新增牌堆样式 */
+.card-pile {
+    /* 继承 .card.back 的样式 */
+    width: 80px; /* 调整牌堆大小 */
+    height: 120px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 5px;
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+    /* 其他堆叠效果样式可以在这里添加 */
 }
