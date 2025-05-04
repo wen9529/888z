@@ -245,7 +245,6 @@ function checkImage(cardElement, card) {
     };
     img.src = `images/${card.rank}_of_${card.suit.toLowerCase()}.png`;
 
-});
 
 
 // ---- 辅助函数 ----
