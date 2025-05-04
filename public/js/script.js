@@ -72,6 +72,8 @@ socket.on('room_list', (rooms) => {
                 // 选中房间后，将房间ID填入选择框
                 document.getElementById('join-room-input').value = room.id;
             });
+            // 触发加入房间按钮的点击事件
+            document.getElementById('join-room-button').click();
             roomListElement.appendChild(li);
         });
     }
@@ -236,6 +238,9 @@ passButton.addEventListener('click', () => {
 
 // 检查图片是否存在，如果不存在则显示文字
 function checkImage(cardElement, card) {
+    // 使join-room-input可见
+    document.getElementById('join-room-input').style.display = 'inline-block';
+
     const img = new Image();
     img.onerror = function() {
         // 图片不存在，显示文字
