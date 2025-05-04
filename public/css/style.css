@@ -11,9 +11,11 @@
   width: 50px;
   height: 75px;
   border-radius: 4px;
+}
 
 .card-group {
 >>>>>>> e829e9c (Add utility CSS classes for common styling)
+}
 /* 游戏 CSS 样式 */
 body {
   font-family: sans-serif;
@@ -229,5 +231,3 @@ h1 {
     color: #333;
     padding: 2px; /* 缩小内边距 */
     text-align: center;
-    word-break: break-all; /* 防止文本溢出 */
-}
