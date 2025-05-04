@@ -131,7 +131,7 @@ socket.on('player_ready_status', (data) => {
 });
 
 // 游戏开始
-socket.on('game_start', (data) => {
+socket.on('game_started', (data) => {
     console.log('游戏开始:', data);
     // 隐藏大厅界面，显示游戏界面
     lobbyElement.style.display = 'none';
@@ -141,12 +141,18 @@ socket.on('game_start', (data) => {
     updatePlayerAreas(data.players, myPlayerId); // 更新玩家区域显示
 });
 
-// 更新手牌
-socket.on('update_hand', (hand) => {
+// 更新手牌（更名为 your_hand 以与服务器端一致）
+socket.on('your_hand', (hand) => {
     console.log('手牌更新:', hand);
     displayCards(hand); // 显示玩家手牌
 });
 
+// 更新手牌
+// 更新牌桌上的牌
+socket.on('update_play_area', (play) => {
+    console.log('牌桌上的牌更新:', play);
+    displayPlayArea(play); // 显示牌桌上的牌
+});
 // 更新牌桌上的牌
 socket.on('update_play_area', (play) => {
     console.log('牌桌上的牌更新:', play);
@@ -154,25 +160,27 @@ socket.on('update_play_area', (play) => {
 });
 
 // 提示轮到谁出牌
-socket.on('your_turn', () => {
-    console.log('轮到你出牌了');
-    gameStatusElement.textContent = '轮到你出牌';
-    playButton.disabled = false; // 启用出牌按钮
-    passButton.disabled = false; // 启用过牌按钮
-});
-
-// 提示轮到其他玩家出牌
-socket.on('player_turn', (playerName) => {
-    console.log(\`轮到玩家 ${playerName} 出牌了\`);
-    gameStatusElement.textContent = \`轮到 ${playerName} 出牌\`;
-    playButton.disabled = true; // 禁用出牌按钮
-    passButton.disabled = true; // 禁用过牌按钮
+socket.on('next_turn', (data) => {
+    console.log('轮到玩家', data.playerId, '出牌');
+    if (data.playerId === myPlayerId) {
+        gameStatusElement.textContent = '轮到你出牌';
+        playButton.disabled = false; // 启用出牌按钮
+        passButton.disabled = false; // 启用过牌按钮
+    } else {
+        const playerInfo = playerList.find(p => p.id === data.playerId);
+        if (playerInfo) {
+            const playerName = playerInfo.username; // 获取玩家的用户名
+            gameStatusElement.textContent = \`轮到 ${playerName} 出牌\`;
+        }
+        playButton.disabled = true; // 禁用出牌按钮
+        passButton.disabled = true; // 禁用过牌按钮
+    }
 });
 
 // 游戏结束
 socket.on('game_over', (data) => {
     console.log('游戏结束:', data);
-    gameStatusElement.textContent = \`游戏结束！胜利者是：${data.winner}\`;
+    gameStatusElement.textContent = \`游戏结束！胜利者是：${data.winnerId}\`;
     // 可以添加其他游戏结束后的处理，例如显示结算信息等
 });
 
@@ -183,7 +191,6 @@ socket.on('game_error', (message) => {
 });
 
 
-// ---- 事件监听 ----
 
 // 连接按钮点击事件
 connectButton.addEventListener('click', () => {
@@ -251,7 +258,7 @@ function checkImage(cardElement, card) {
     img.src = `images/${card.rank}_of_${card.suit.toLowerCase()}.png`;
 
 
-
+}
 // ---- 辅助函数 ----
 
 // 更新玩家列表显示
