@@ -110,6 +110,8 @@ io.on('connection', (socket) => {
 
   let currentRoomId = null; // 存储玩家当前所在的房间 ID
 
+  socket.emit('room_list', Object.keys(rooms).map(roomId => ({ id: roomId, players: Object.keys(rooms[roomId].players).length })));
+
    // 玩家请求加入房间
   socket.on('join_room', (roomId) => {
        if (socket.rooms.has(roomId)) {
@@ -161,7 +163,8 @@ io.on('connection', (socket) => {
        console.log(`用户 ${socket.id} 加入房间 ${roomId}`);
 
         // 通知房间内所有玩家玩家列表更新
-        io.to(roomId).emit('player_list_updated', Object.values(room.players).map(p => ({ id: p.id, position: p.position, ready: p.ready })));
+       // io.to(roomId).emit('player_list_updated', Object.values(room.players).map(p => ({ id: p.id, position: p.position, ready: p.ready })));
+        io.to(roomId).emit('player_list', Object.values(room.players).map(player => ({ id: player.id, username: player.username, ready: player.ready})));
 
         // 成功加入房间的反馈
         socket.emit('joined_room', { roomId: roomId });
