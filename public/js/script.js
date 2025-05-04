@@ -72,8 +72,6 @@ socket.on('room_list', (rooms) => {
                 // 选中房间后，将房间ID填入选择框
                 document.getElementById('join-room-input').value = room.id;
             });
-            // 触发加入房间按钮的点击事件
-            document.getElementById('join-room-button').click();
             roomListElement.appendChild(li);
         });
     }
@@ -205,6 +203,7 @@ createRoomButton.addEventListener('click', () => {
     socket.emit('create_room');
 });
 
+console.log("joinRoomButton",joinRoomButton)
 // 加入房间按钮点击事件
 joinRoomButton.addEventListener('click', () => {
     const roomId = document.getElementById('join-room-input').value.trim();
@@ -212,6 +211,7 @@ joinRoomButton.addEventListener('click', () => {
         socket.emit('join_room', roomId);
     } else {
         alert('请输入房间ID');
+        console.log("joinRoomButton clicked")
     }
 });
 
