@@ -234,6 +234,19 @@ passButton.addEventListener('click', () => {
     selectedCards = []; // 清空选中牌
 });
 
+// 检查图片是否存在，如果不存在则显示文字
+function checkImage(cardElement, card) {
+    const img = new Image();
+    img.onerror = function() {
+        // 图片不存在，显示文字
+        cardElement.style.backgroundImage = 'none';
+        cardElement.classList.add('text-only'); // 添加 text-only 类
+        cardElement.textContent = `${card.rank}${card.suit}`; // 显示牌的文字
+    };
+    img.src = `images/${card.rank}_of_${card.suit.toLowerCase()}.png`;
+
+});
+
 
 // ---- 辅助函数 ----
 
@@ -271,19 +284,7 @@ function displayCards(hand) {
             console.log('当前选中牌:', selectedCards);
         });
 
-        // 检查图片是否存在，如果不存在则显示文字
-        const img = new Image();
-        img.onload = function() {
-            // 图片存在，不做额外处理
-        }
-        img.onerror = function() {
-            // 图片不存在，显示文字
-            cardElement.style.backgroundImage = 'none';
-            cardElement.classList.add('text-only'); // 添加 text-only 类
-            cardElement.textContent = \`${card.rank}${card.suit}\`; // 显示牌的文字
-        }
-        img.src = \`images/${card.rank}_of_${card.suit.toLowerCase()}.png\`;
-
+        checkImage(cardElement, card);
 
         cardsElement.appendChild(cardElement);
     });
@@ -298,19 +299,7 @@ function displayPlayArea(play) {
             cardElement.classList.add('card', 'played'); // 添加 played 类
             cardElement.style.backgroundImage = \`url('images/${card.rank}_of_${card.suit.toLowerCase()}.png')\`;
 
-            // 检查图片是否存在，如果不存在则显示文字
-            const img = new Image();
-            img.onload = function() {
-                // 图片存在，不做额外处理
-            }
-            img.onerror = function() {
-                // 图片不存在，显示文字
-                cardElement.style.backgroundImage = 'none';
-                cardElement.classList.add('text-only'); // 添加 text-only 类
-                cardElement.textContent = \`${card.rank}${card.suit}\`; // 显示牌的文字
-            }
-            img.src = \`images/${card.rank}_of_${card.suit.toLowerCase()}.png\`;
-
+            checkImage(cardElement, card);
 
             playArea.appendChild(cardElement);
         });
