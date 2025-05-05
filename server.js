@@ -75,40 +75,145 @@ function dealCards(deck) {
 // 检查牌型和比较大小 (需要完善，这是一个核心功能)
 // 返回 { valid: boolean, stronger: boolean, type: string }
 function checkPlay(play, lastPlay) {
-    if (play.length === 0) return { valid: false, stronger: false, type: 'none' };
+    const rankOrder = ['3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A', '2'];
+    const suitOrder = ['C', 'D', 'H', 'S'];
 
-    // TODO: 实现各种牌型的判断和比较逻辑
-    // 返回牌型信息 (例如：'single', 'pair', 'triple', 'straight', 'flush', 'fullhouse', 'fourkind', 'straightflush')
+    // 辅助函数：获取牌的数值
+    const getCardValue = (card) => {
+        return rankOrder.indexOf(card.rank) * 4 + suitOrder.indexOf(card.suit);
+    };
 
-    // 示例：简化为只判断单牌大小
-    if (play.length === 1) {
-         const rankOrder = ['3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A', '2'];
-         const suitOrder = ['C', 'D', 'H', 'S'];
-         const rankA = rankOrder.indexOf(play[0].rank);
+    // 辅助函数：比较两手牌的大小
+    const comparePlays = (play1, play2) => {
+        // 炸弹大于一切非炸弹
+        const type1 = getPlayType(play1).type;
+        const type2 = getPlayType(play2).type;
+        if (type1 === 'bomb' && type2 !== 'bomb') return true;
+        if (type1 !== 'bomb' && type2 === 'bomb') return false;
 
-         if (lastPlay && lastPlay.length === 1) {
-             const rankB = rankOrder.indexOf(lastPlay[0].rank);
-             if (rankA > rankB) return { valid: true, stronger: true, type: 'single' };
-             if (rankA < rankB) return { valid: true, stronger: false, type: 'single' };
-             const suitA = suitOrder.indexOf(play[0].suit);
-             const suitB = suitOrder.indexOf(lastPlay[0].suit);
-             return { valid: true, stronger: suitA > suitB, type: 'single' };
-         } else if (!lastPlay || lastPlay.length === 0) {
-             return { valid: true, stronger: true, type: 'single' }; // 第一个出牌
-         }
+        // 同类型牌比较
+        if (type1 === type2) {
+            if (type1 === 'single' || type1 === 'pair' || type1 === 'triple' || type1 === 'bomb') {
+                // 比较点数最大的牌
+                return getCardValue(play1[play1.length - 1]) > getCardValue(play2[play2.length - 1]);
+            } else if (type1 === 'straight') {
+                // 比较顺子中点数最大的牌
+                 return getCardValue(play1[play1.length - 1]) > getCardValue(play2[play2.length - 1]);
+            }
+             // TODO: 添加其他牌型的比较逻辑
+        }
+
+        return false; // 默认情况，无法比较或play1不强于play2
+    };
+
+    // 辅助函数：获取牌型
+    const getPlayType = (play) => {
+        const len = play.length;
+        if (len === 0) return { type: 'none', valid: false };
+
+        // 按点数分组
+        const rankCounts = {};
+        play.forEach(card => {
+            rankCounts[card.rank] = (rankCounts[card.rank] || 0) + 1;
+        });
+        const uniqueRanks = Object.keys(rankCounts);
+        const numUniqueRanks = uniqueRanks.length;
+
+        // 排序手牌以便检查顺子等
+        play.sort((a, b) => getCardValue(a) - getCardValue(b));
+
+        // 单张
+        if (len === 1) {
+            return { type: 'single', valid: true };
+        }
+
+        // 对子
+        if (len === 2 && numUniqueRanks === 1) {
+            return { type: 'pair', valid: true };
+        }
+
+        // 三张
+        if (len === 3 && numUniqueRanks === 1) {
+            return { type: 'triple', valid: true };
+        }
+
+        // 炸弹 (四张相同点数的牌)
+        if (len === 4 && numUniqueRanks === 1) {
+            return { type: 'bomb', valid: true };
+        }
+
+        // 顺子 (至少5张，连续点数)
+        if (len >= 5 && numUniqueRanks === len) {
+            let isStraight = true;
+            for (let i = 0; i < len - 1; i++) {
+                 const currentRankIndex = rankOrder.indexOf(play[i].rank);
+                 const nextRankIndex = rankOrder.indexOf(play[i + 1].rank);
+                 if (nextRankIndex !== currentRankIndex + 1) {
+                     isStraight = false;
+                     break;
+                 }
+            }
+             if (isStraight) return { type: 'straight', valid: true };
+        }
+
+        // TODO: 添加其他牌型的判断，例如葫芦、同花、同花顺等（根据游戏规则）
+
+        return { type: 'unknown', valid: false }; // 默认非法牌型
+    };
+
+    // 获取当前出的牌的牌型信息
+    const currentPlayTypeInfo = getPlayType(play);
+
+    // 如果出的牌本身就不合法
+    if (!currentPlayTypeInfo.valid) {
+        return { valid: false, stronger: false, type: 'unknown' };
     }
 
-    // TODO: 添加其他牌型的判断和比较
+    // 如果是回合的第一次出牌，任何合法牌型都可以
+    if (!lastPlay || lastPlay.length === 0) {
+        return { valid: true, stronger: true, type: currentPlayTypeInfo.type };
+    }
 
-     // 默认非法牌型
-    return { valid: false, stronger: false, type: 'unknown' };
+    // 获取上一回合出的牌的牌型信息
+    const lastPlayTypeInfo = getPlayType(lastPlay);
+
+    // 如果出的牌是炸弹
+    if (currentPlayTypeInfo.type === 'bomb') {
+        // 炸弹可以压任何非炸弹的牌型
+        if (lastPlayTypeInfo.type !== 'bomb') {
+            return { valid: true, stronger: true, type: 'bomb' };
+        } else {
+            // 比较两个炸弹的大小 (炸弹比较点数)
+             return { valid: true, stronger: comparePlays(play, lastPlay), type: 'bomb' };
+        }
+    }
+
+    // 如果上一回合出的牌是炸弹，当前非炸弹牌无法压制
+    if (lastPlayTypeInfo.type === 'bomb') {
+        return { valid: false, stronger: false, type: currentPlayTypeInfo.type };
+    }
+
+    // 比较同类型牌
+    if (currentPlayTypeInfo.type === lastPlayTypeInfo.type) {
+         // 确保出的牌数量与上一回合相同 (除了炸弹和顺子，其他牌型数量必须一致)
+         if (currentPlayTypeInfo.type !== 'bomb' && currentPlayTypeInfo.type !== 'straight' && play.length !== lastPlay.length) {
+              return { valid: false, stronger: false, type: currentPlayTypeInfo.type };
+         }
+         // 比较大小
+         return { valid: true, stronger: comparePlays(play, lastPlay), type: currentPlayTypeInfo.type };
+    }
+
+    // 不同类型牌（非炸弹）不能互相压制（例如单张不能压对子，对子不能压顺子等）
+    return { valid: false, stronger: false, type: currentPlayTypeInfo.type };
+
 }
-
 
 io.on('connection', (socket) => {
   console.log('一个用户连接：', socket.id);
 
   let currentRoomId = null; // 存储玩家当前所在的房间 ID
+
+  socket.emit('room_list', Object.keys(rooms).map(roomId => ({ id: roomId, players: Object.keys(rooms[roomId].players).length })));
 
    // 玩家请求加入房间
   socket.on('join_room', (roomId) => {
@@ -161,7 +266,8 @@ io.on('connection', (socket) => {
        console.log(`用户 ${socket.id} 加入房间 ${roomId}`);
 
         // 通知房间内所有玩家玩家列表更新
-        io.to(roomId).emit('player_list_updated', Object.values(room.players).map(p => ({ id: p.id, position: p.position, ready: p.ready })));
+       // io.to(roomId).emit('player_list_updated', Object.values(room.players).map(p => ({ id: p.id, position: p.position, ready: p.ready })));
+        io.to(roomId).emit('player_list', Object.values(room.players).map(player => ({ id: player.id, username: player.username, ready: player.ready})));
 
         // 成功加入房间的反馈
         socket.emit('joined_room', { roomId: roomId });
@@ -202,40 +308,48 @@ io.on('connection', (socket) => {
     });
 
 
-    // 开始游戏逻辑 (现在接受 roomId 参数)
-   function startGame(roomId) {
+    // 初始化游戏（洗牌、发牌、确定起始玩家）
+   function initializeGame(roomId) {
         const room = rooms[roomId];
         if (!room) return;
 
-        room.state = 'started';
         const playerIdsInRoom = Object.keys(room.players);
 
         room.deck = initializeDeck();
         const hands = dealCards(room.deck);
 
+        // 分发手牌并确定起始玩家（拥有红桃3的玩家）
         let startPlayerId = null;
-
         playerIdsInRoom.forEach((id, index) => {
             room.players[id].hand = hands[index];
             if (room.players[id].hand.some(card => card.rank === '3' && card.suit === 'H')) {
                 startPlayerId = id;
             }
-            io.to(id).emit('your_hand', room.players[id].hand);
         });
 
+        // 确定玩家顺序，红桃3玩家先出牌
         room.playerOrder = playerIdsInRoom;
         const startIndex = room.playerOrder.indexOf(startPlayerId);
         room.playerOrder = room.playerOrder.slice(startIndex).concat(room.playerOrder.slice(0, startIndex));
 
+        // 重置游戏状态
         room.currentPlayerId = room.playerOrder[0];
         room.currentPlay = [];
         room.lastPlay = null; // 重置上一回合出的牌
         room.lastPlayPlayerId = null; // 重置上一回合出牌玩家
         room.passedPlayers = 0; // 重置连续过牌玩家计数
 
+        room.state = 'started'; // 设置房间状态为已开始
+
+        // 通知所有玩家游戏开始和初始手牌
+         playerIdsInRoom.forEach((id) => {
+            io.to(id).emit('your_hand', room.players[id].hand);
+         });
+
         io.to(roomId).emit('game_started', {
             startPlayerId: room.currentPlayerId,
-            players: Object.values(room.players).map(p => ({ id: p.id, position: p.position, handSize: p.hand.length })),
+            // 发送给客户端的玩家信息只包含需要公开的信息，例如手牌数量
+            players: Object.values(room.players).map(p => ({ id: p.id, username: p.username, handSize: p.hand.length })),
             playerOrder: room.playerOrder
         });
    }
@@ -260,7 +374,7 @@ io.on('connection', (socket) => {
          }
 
         // 检查玩家手牌是否包含要出的牌
-        const playerHandRanks = room.players[socket.id].hand.map(card => `${card.rank}${card.suit}`);
+        const playerHandRanks = room.players[socket.id].hand.map(card => `${card.rank}${card.suit}`.toUpperCase()); // 确保比较时大小写一致
         const validPlayInHand = cards.every(card =>
              playerHandRanks.includes(`${card.rank}${card.suit}`)
         );

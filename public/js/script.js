@@ -18,6 +18,7 @@ const playButton = document.getElementById('play-button');
 const passButton = document.getElementById('pass-button');
 const readyButton = document.getElementById('ready-button');
 const gameStatusElement = document.getElementById('game-status');
+const errorMessageElement = document.getElementById('error-message'); // 获取错误信息显示区域
 const playerAreas = {
     player1: document.getElementById('player-1-area'),
     player2: document.getElementById('player-2-area'),
@@ -131,7 +132,7 @@ socket.on('player_ready_status', (data) => {
 });
 
 // 游戏开始
-socket.on('game_start', (data) => {
+socket.on('game_started', (data) => {
     console.log('游戏开始:', data);
     // 隐藏大厅界面，显示游戏界面
     lobbyElement.style.display = 'none';
@@ -141,12 +142,18 @@ socket.on('game_start', (data) => {
     updatePlayerAreas(data.players, myPlayerId); // 更新玩家区域显示
 });
 
-// 更新手牌
-socket.on('update_hand', (hand) => {
+// 更新手牌（更名为 your_hand 以与服务器端一致）
+socket.on('your_hand', (hand) => {
     console.log('手牌更新:', hand);
     displayCards(hand); // 显示玩家手牌
 });
 
+// 更新手牌
+// 更新牌桌上的牌
+socket.on('update_play_area', (play) => {
+    console.log('牌桌上的牌更新:', play);
+    displayPlayArea(play); // 显示牌桌上的牌
+});
 // 更新牌桌上的牌
 socket.on('update_play_area', (play) => {
     console.log('牌桌上的牌更新:', play);
@@ -154,36 +161,43 @@ socket.on('update_play_area', (play) => {
 });
 
 // 提示轮到谁出牌
-socket.on('your_turn', () => {
-    console.log('轮到你出牌了');
-    gameStatusElement.textContent = '轮到你出牌';
-    playButton.disabled = false; // 启用出牌按钮
-    passButton.disabled = false; // 启用过牌按钮
-});
-
-// 提示轮到其他玩家出牌
-socket.on('player_turn', (playerName) => {
-    console.log(\`轮到玩家 ${playerName} 出牌了\`);
-    gameStatusElement.textContent = \`轮到 ${playerName} 出牌\`;
-    playButton.disabled = true; // 禁用出牌按钮
-    passButton.disabled = true; // 禁用过牌按钮
+socket.on('next_turn', (data) => {
+    console.log('轮到玩家', data.playerId, '出牌');
+    if (data.playerId === myPlayerId) {
+        gameStatusElement.textContent = '轮到你出牌';
+        playButton.disabled = false; // 启用出牌按钮
+        passButton.disabled = false; // 启用过牌按钮
+    } else {
+        const playerInfo = playerList.find(p => p.id === data.playerId);
+        if (playerInfo) {
+            const playerName = playerInfo.username; // 获取玩家的用户名
+            gameStatusElement.textContent = \`轮到 ${playerName} 出牌\`;
+        }
+        playButton.disabled = true; // 禁用出牌按钮
+        passButton.disabled = true; // 禁用过牌按钮
+    }
 });
 
 // 游戏结束
 socket.on('game_over', (data) => {
     console.log('游戏结束:', data);
-    gameStatusElement.textContent = \`游戏结束！胜利者是：${data.winner}\`;
+    gameStatusElement.textContent = \`游戏结束！胜利者是：${data.winnerId}\`;
     // 可以添加其他游戏结束后的处理，例如显示结算信息等
 });
 
 // 错误信息
 socket.on('game_error', (message) => {
-    console.error('游戏错误:', message);
-    alert(\`游戏发生错误: ${message}\`);
+ console.error('游戏错误:', message);
+ displayError(`游戏发生错误: ${message}`); // 在UI上显示错误信息
 });
 
+// 通用错误处理
+socket.on('error', (message) => {
+    console.error('服务器错误:', message);
+    displayError(`服务器错误: ${message}`);
 
-// ---- 事件监听 ----
+});
+
 
 // 连接按钮点击事件
 connectButton.addEventListener('click', () => {
@@ -203,6 +217,7 @@ createRoomButton.addEventListener('click', () => {
     socket.emit('create_room');
 });
 
+console.log("joinRoomButton",joinRoomButton)
 // 加入房间按钮点击事件
 joinRoomButton.addEventListener('click', () => {
     const roomId = document.getElementById('join-room-input').value.trim();
@@ -210,6 +225,7 @@ joinRoomButton.addEventListener('click', () => {
         socket.emit('join_room', roomId);
     } else {
         alert('请输入房间ID');
+        console.log("joinRoomButton clicked")
     }
 });
 
@@ -234,7 +250,19 @@ passButton.addEventListener('click', () => {
     selectedCards = []; // 清空选中牌
 });
 
+// 检查图片是否存在，如果不存在则显示文字
+function checkImage(cardElement, card) {
+    const img = new Image();
+    img.onerror = function() {
+        // 图片不存在，显示文字
+        cardElement.style.backgroundImage = 'none';
+        cardElement.classList.add('text-only'); // 添加 text-only 类
+        cardElement.textContent = `${card.rank}${card.suit}`; // 显示牌的文字
+    };
+    img.src = `images/${card.rank}_of_${card.suit.toLowerCase()}.png`;
 
+
+}
 // ---- 辅助函数 ----
 
 // 更新玩家列表显示
@@ -271,19 +299,7 @@ function displayCards(hand) {
             console.log('当前选中牌:', selectedCards);
         });
 
-        // 检查图片是否存在，如果不存在则显示文字
-        const img = new Image();
-        img.onload = function() {
-            // 图片存在，不做额外处理
-        }
-        img.onerror = function() {
-            // 图片不存在，显示文字
-            cardElement.style.backgroundImage = 'none';
-            cardElement.classList.add('text-only'); // 添加 text-only 类
-            cardElement.textContent = \`${card.rank}${card.suit}\`; // 显示牌的文字
-        }
-        img.src = \`images/${card.rank}_of_${card.suit.toLowerCase()}.png\`;
-
+        checkImage(cardElement, card);
 
         cardsElement.appendChild(cardElement);
     });
@@ -298,19 +314,7 @@ function displayPlayArea(play) {
             cardElement.classList.add('card', 'played'); // 添加 played 类
             cardElement.style.backgroundImage = \`url('images/${card.rank}_of_${card.suit.toLowerCase()}.png')\`;
 
-            // 检查图片是否存在，如果不存在则显示文字
-            const img = new Image();
-            img.onload = function() {
-                // 图片存在，不做额外处理
-            }
-            img.onerror = function() {
-                // 图片不存在，显示文字
-                cardElement.style.backgroundImage = 'none';
-                cardElement.classList.add('text-only'); // 添加 text-only 类
-                cardElement.textContent = \`${card.rank}${card.suit}\`; // 显示牌的文字
-            }
-            img.src = \`images/${card.rank}_of_${card.suit.toLowerCase()}.png\`;
-
+            checkImage(cardElement, card);
 
             playArea.appendChild(cardElement);
         });
