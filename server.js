@@ -15,7 +15,7 @@ app.get('/', (req, res) => {
 // 房间管理 (固定房间号 1-5)
 const rooms = {}; // 存储房间信息 { roomId: { players: {}, deck: [], currentPlayerId: null, currentPlay: [], playerOrder: [], state: 'waiting', readyPlayers: 0, lastPlay: null, lastPlayPlayerId: null } }
 
-// 初始化固定房间
+// 初始化固定房间 (只保留房间 1)
 for (let i = 1; i <= 5; i++) {
     const roomId = i.toString();
     rooms[roomId] = {
@@ -25,7 +25,7 @@ for (let i = 1; i <= 5; i++) {
         currentPlay: [], // 当前桌面上的牌
         playerOrder: [],
         state: 'waiting', // 房间状态: waiting, ready, started, game_over
-        readyPlayers: 0,
+ ready: false, // 房间准备状态
         lastPlay: null, // 上一回合出的牌
         lastPlayPlayerId: null, // 上一回合出牌的玩家 ID
         passedPlayers: 0, // 连续过牌玩家数量
@@ -211,99 +211,47 @@ function checkPlay(play, lastPlay) {
 io.on('connection', (socket) => {
   console.log('一个用户连接：', socket.id);
 
-  let currentRoomId = null; // 存储玩家当前所在的房间 ID
+  const fixedRoomId = '1'; // 固定房间号
+  let currentRoomId = fixedRoomId; // 存储玩家当前所在的房间 ID
 
-  socket.emit('room_list', Object.keys(rooms).map(roomId => ({ id: roomId, players: Object.keys(rooms[roomId].players).length })));
+   // 自动加入固定房间
+   socket.join(fixedRoomId);
+   console.log(`用户 ${socket.id} 加入房间 ${fixedRoomId}`);
 
-   // 玩家请求加入房间
-  socket.on('join_room', (roomId) => {
-       if (socket.rooms.has(roomId)) {
-            socket.emit('error', '您已在该房间中');
-            return;
-       }
+   const room = rooms[fixedRoomId];
+   const playerIdsInRoom = Object.keys(room.players);
 
-        // 检查房间号是否有效
-       if (!rooms[roomId]) {
-            socket.emit('error', '房间号无效');
-            return;
-       }
-
-       const room = rooms[roomId];
-        const playerIdsInRoom = Object.keys(room.players);
-
-        if (playerIdsInRoom.length >= 4) {
-             socket.emit('error', '房间已满');
-             return;
-        }
-
-        // 检查房间是否已经在游戏中
-        if (room.state === 'started') {
-             socket.emit('spectating', { message: '游戏已开始，您正在观战或等待下一局' });
-             // 可以发送当前游戏状态给观战者
-        }
-
-
-       // 加入 Socket.IO 房间
-       socket.join(roomId);
-       currentRoomId = roomId;
+    // 如果房间已满，可以考虑拒绝加入或作为观察者
+   if (playerIdsInRoom.length >= 4) {
+        socket.emit('error', '房间已满');
+        // 可以实现观战逻辑
+        return;
+   }
 
        // 添加玩家到房间
        room.players[socket.id] = {
             id: socket.id,
             hand: [],
             position: null,
-            ready: false, // 玩家准备状态
+ username: `玩家${Object.keys(room.players).length + 1}`, // 简化用户名
        };
 
         // 分配座位
         const availablePositions = ['bottom', 'left', 'top', 'right'].filter(pos => !Object.values(room.players).some(p => p.position === pos));
         if (availablePositions.length > 0) {
             room.players[socket.id].position = availablePositions[0];
-            socket.emit('seat_assigned', room.players[socket.id].position);
         }
 
+   // 通知房间内所有玩家玩家列表更新 (现在只包含 username)
+   io.to(fixedRoomId).emit('player_list', Object.values(room.players).map(player => ({ id: player.id, username: player.username })));
 
-       console.log(`用户 ${socket.id} 加入房间 ${roomId}`);
-
-        // 通知房间内所有玩家玩家列表更新
-       // io.to(roomId).emit('player_list_updated', Object.values(room.players).map(p => ({ id: p.id, position: p.position, ready: p.ready })));
-        io.to(roomId).emit('player_list', Object.values(room.players).map(player => ({ id: player.id, username: player.username, ready: player.ready})));
-
-        // 成功加入房间的反馈
-        socket.emit('joined_room', { roomId: roomId });
-
-  });
-
-
-   // 玩家请求准备
-    socket.on('player_ready', () => {
-       if (!currentRoomId || !rooms[currentRoomId]) {
-            socket.emit('error', '您不在任何房间中');
-            return;
-       }
-       const room = rooms[currentRoomId];
-
-       if (!room.players[socket.id]) {
-             socket.emit('error', '您不在房间玩家列表中');
-             return;
-       }
-
-        if (room.players[socket.id].ready) {
-             socket.emit('error', '您已经准备了');
-             return;
-        }
-
-       room.players[socket.id].ready = true;
-       room.readyPlayers++;
-        room.state = 'ready'; // 房间状态变为准备中
-
-        io.to(currentRoomId).emit('player_ready_status', { playerId: socket.id, ready: true });
-
-       console.log(`玩家 ${socket.id} 在房间 ${currentRoomId} 准备就绪，当前 ${room.readyPlayers} 人准备`);
+    // 成功加入房间的反馈 (包含自己的用户名)
+   socket.emit('joined_room', { roomId: fixedRoomId, playerId: socket.id, username: room.players[socket.id].username });
 
        // 如果房间已满且所有玩家都准备就绪，自动开始游戏
-        if (Object.keys(room.players).length === 4 && room.readyPlayers === 4 && room.state === 'ready') {
-             startGame(currentRoomId);
+    if (Object.keys(room.players).length === 4 && !room.ready) {
+        room.ready = true; // 标记房间准备好开始游戏
+        initializeGame(fixedRoomId);
         }
     });
 
@@ -338,7 +286,6 @@ io.on('connection', (socket) => {
         room.lastPlay = null; // 重置上一回合出的牌
         room.lastPlayPlayerId = null; // 重置上一回合出牌玩家
         room.passedPlayers = 0; // 重置连续过牌玩家计数
-
         room.state = 'started'; // 设置房间状态为已开始
 
         // 通知所有玩家游戏开始和初始手牌
@@ -349,8 +296,7 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('game_started', {
             startPlayerId: room.currentPlayerId,
             // 发送给客户端的玩家信息只包含需要公开的信息，例如手牌数量
-            players: Object.values(room.players).map(p => ({ id: p.id, username: p.username, handSize: p.hand.length })),
-            playerOrder: room.playerOrder
+ players: Object.values(room.players).map(p => ({ id: p.id, username: p.username, handSize: p.hand.length }))
         });
    }
 
