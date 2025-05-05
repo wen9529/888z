@@ -1,82 +1,96 @@
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
+ const express = require('express');
+ const http = require('http');
+ const socketIo = require('socket.io');
 
-const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
+ const app = express();
+ const server = http.createServer(app);
+ const io = socketIo(server);
 
-app.use(express.static('public'));
+ app.use(express.static('public'));
 
-app.get('/', (req, res) => {
+ app.get('/', (req, res) => {
   res.sendFile(__dirname + '/public/index.html');
-});
+ });
 
-// 房间管理 (固定房间号 1-5)
-const rooms = {}; // 存储房间信息 { roomId: { players: {}, deck: [], currentPlayerId: null, currentPlay: [], playerOrder: [], state: 'waiting', readyPlayers: 0, lastPlay: null, lastPlayPlayerId: null } }
+ // Constants for card suits and ranks
+ const SUITS = ['C', 'D', 'H', 'S']; // Clubs, Diamonds, Hearts, Spades
+ const RANKS = ['3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A', '2'];
 
-// 初始化固定房间 (只保留房间 1)
-for (let i = 1; i <= 5; i++) {
-    const roomId = i.toString();
-    rooms[roomId] = {
-        players: {},
+ // Function to create a card object
+ function createCard(rank, suit) {
+  return { rank, suit };
+ }
+
+ // Function to initialize a deck of cards
+ function initializeDeck() {
+  const deck = [];
+  for (const suit of SUITS) {
+    for (const rank of RANKS) {
+      deck.push(createCard(rank, suit));
+    }
+  }
+  return deck;
+ }
+
+ // Function to shuffle the deck using Fisher-Yates algorithm
+ function shuffleDeck(deck) {
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  return deck;
+ }
+
+ // Function to deal cards to players
+ function dealCards(deck, numPlayers = 4) {
+    const hands = [];
+    for (let i = 0; i < numPlayers; i++) {
+      hands[i] = [];
+    }
+    for (let i = 0; i < deck.length; i++) {
+        hands[i % numPlayers].push(deck[i]);
+    }
+    return hands;
+ }
+
+ // 房间管理
+ const rooms = {};
+
+ //io连接
+ io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+ });
+
+// Function to create a player object
+function createPlayer(id,username) {
+  return {
+    id,
+    hand: [], // Initialize with an empty hand
+    username,
+  };
+}
+
+// Function to create a room
+function createRoom(roomId) {
+    return {
+        id: roomId,
+        players: {}, // { playerId: player }
         deck: [],
         currentPlayerId: null,
-        currentPlay: [], // 当前桌面上的牌
+        currentPlay: [],
         playerOrder: [],
-        state: 'waiting', // 房间状态: waiting, ready, started, game_over
- ready: false, // 房间准备状态
-        lastPlay: null, // 上一回合出的牌
-        lastPlayPlayerId: null, // 上一回合出牌的玩家 ID
-        passedPlayers: 0, // 连续过牌玩家数量
+        state: 'waiting', // 'waiting', 'started', 'ended'
+        lastPlay: null,
+        lastPlayPlayerId: null,
+        passedPlayers: 0,
     };
 }
 
-// 锄大地游戏逻辑
+// Modify io.on('connection') to handle player joining
+io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
 
-// 初始化牌堆 (与之前相同)
-function initializeDeck() {
-    const suits = ['C', 'D', 'H', 'S'];
-    const ranks = ['3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A', '2'];
-    const deck = [];
-    for (const suit of suits) {
-        for (const rank of ranks) {
-            deck.push({ rank, suit });
-        }
-    }
-    for (let i = deck.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [deck[i], deck[j]] = [deck[j], deck[i]];
-    }
-    return deck;
-}
-
-// 发牌 (与之前相同)
-function dealCards(deck) {
-    const hands = [[], [], [], []];
-    // Ensure each of the four players receives exactly 13 cards
-    const numPlayers = 4;
-    for (let i = 0; i < deck.length; i++) { // The deck has 52 cards
-        hands[i % 4].push(deck[i]);
-    }
-     const rankOrder = ['3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A', '2'];
-     const suitOrder = ['C', 'D', 'H', 'S'];
-     for (const hand of hands) {
-         hand.sort((a, b) => {
-              const rankA = rankOrder.indexOf(a.rank);
-              const rankB = rankOrder.indexOf(b.rank);
-              if (rankA !== rankB) {
-                  return rankA - rankB;
-              }
-              return suitOrder.indexOf(a.suit) - suitOrder.indexOf(b.suit);
-         });
-     }
-    return hands;
-}
-
-// 检查牌型和比较大小 (需要完善，这是一个核心功能)
-// 返回 { valid: boolean, stronger: boolean, type: string }
-function checkPlay(play, lastPlay) {
+ function checkPlay(play, lastPlay) {
     const rankOrder = ['3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A', '2'];
     const suitOrder = ['C', 'D', 'H', 'S'];
 
@@ -517,7 +531,55 @@ io.on('connection', (socket) => {
      }
  });
 
+
+// Function to initialize the game
+function initializeGame(roomId) {
+    const room = rooms[roomId];
+    if (!room) return;
+
+    // Shuffle the deck
+    room.deck = shuffleDeck(initializeDeck());
+
+    // Deal cards to each player
+    const hands = dealCards(room.deck, Object.keys(room.players).length);
+    Object.keys(room.players).forEach((playerId, index) => {
+        room.players[playerId].hand = hands[index];
+    });
+
+    // Determine the starting player (player with 3 of Clubs)
+    let startPlayerId = null;
+    Object.keys(room.players).forEach(playerId => {
+        if (room.players[playerId].hand.some(card => card.rank === '3' && card.suit === 'C')) {
+            startPlayerId = playerId;
+        }
+    });
+
+    // Set the starting player and player order
+    room.currentPlayerId = startPlayerId;
+    room.playerOrder = Object.keys(room.players);
+    const startIndex = room.playerOrder.indexOf(startPlayerId);
+    room.playerOrder = room.playerOrder.slice(startIndex).concat(room.playerOrder.slice(0, startIndex));
+
+    // Set the game state to 'started'
+    room.state = 'started';
+
+    // Notify all players of their hands
+    Object.keys(room.players).forEach((playerId) => {
+        io.to(playerId).emit('your_hand', room.players[playerId].hand);
+    });
+    //Notify all players of the game start and starting player
+    io.to(roomId).emit('game_started', {
+        startPlayerId: room.currentPlayerId,
+        players: Object.values(room.players).map(p => ({ id: p.id, username: p.username, handSize: p.hand.length }))
+    });
+}
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+ console.log(`Server running on http://localhost:${PORT}`);
+});
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`服务器运行在 http://localhost:${PORT}`);
 });
+
