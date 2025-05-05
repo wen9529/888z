@@ -375,9 +375,8 @@ io.on('connection', (socket) => {
 
    });
 
-    // 玩家过牌
+});
     socket.on('pass_turn', () => {
-         if (!currentRoomId || !rooms[currentRoomId]) {
              socket.emit('error', '您不在任何房间中');
              return;
         }
