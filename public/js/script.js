@@ -252,21 +252,11 @@ passButton.addEventListener('click', () => {
 
 // 检查图片是否存在，如果不存在则显示文字
 function checkImage(cardElement, card) {
-<<<<<<< HEAD
-    const img = new Image();
-    img.onerror = function() {
-        // 图片不存在，显示文字
-        cardElement.style.backgroundImage = 'none';
-        cardElement.classList.add('text-only'); // 添加 text-only 类
-        cardElement.textContent = `${card.rank}${card.suit}`; // 显示牌的文字
-    };
-    img.src = `images/${card.rank}_of_${card.suit.toLowerCase()}.png`;
-
-=======
     // 使join-room-input可见
     document.getElementById('join-room-input').style.display = 'inline-block';
 
     const img = new Image();
+
     img.onerror = function() {
         // 图片不存在，显示文字
         cardElement.style.backgroundImage = 'none';
@@ -274,8 +264,6 @@ function checkImage(cardElement, card) {
         cardElement.textContent = `${card.rank}${card.suit}`; // 显示牌的文字
     };
     img.src = `images/${card.rank}_of_${card.suit.toLowerCase()}.png`;
-
->>>>>>> ea5ceab9cfb1a18442592ebaaabc8f7201f608d9
 
 }
 // ---- 辅助函数 ----
