@@ -231,5 +231,3 @@ h1 {
     color: #333;
     padding: 2px; /* 缩小内边距 */
     text-align: center;
-    word-break: break-all; /* 防止文本溢出 */
-}
