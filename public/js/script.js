@@ -67,7 +67,7 @@ socket.on('room_list', (rooms) => {
     } else {
         rooms.forEach(room => {
             const li = document.createElement('li');
-            li.textContent = \`房间ID: ${room.id} (玩家: ${room.players})\`;
+            li.textContent = `房间ID: ${room.id} (玩家: ${room.players})`;
             li.dataset.roomId = room.id; // 存储房间ID
             li.addEventListener('click', () => {
                 // 选中房间后，将房间ID填入选择框
@@ -252,9 +252,6 @@ passButton.addEventListener('click', () => {
 
 // 检查图片是否存在，如果不存在则显示文字
 function checkImage(cardElement, card) {
-    // 使join-room-input可见
-    document.getElementById('join-room-input').style.display = 'inline-block';
-
     const img = new Image();
 
     img.onerror = function() {
