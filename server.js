@@ -427,6 +427,7 @@ io.on('connection', (socket) => {
               io.to(currentRoomId).emit('next_turn', { playerId: room.currentPlayerId });
          }
     });
+});
 
     // 重置游戏状态 (现在接受 roomId 参数)
     function resetGame(roomId) {
@@ -515,7 +516,6 @@ io.on('connection', (socket) => {
            }
 
      }
-
 
   });
 });
