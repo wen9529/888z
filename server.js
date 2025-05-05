@@ -468,10 +468,7 @@ io.on('connection', (socket) => {
 
          if (room.players[socket.id]?.ready) {
              room.readyPlayers--;
-         }
-
-         const position = room.players[socket.id]?.position;
-         delete room.players[socket.id];
+        }
 
           // 从玩家顺序中移除断开连接的玩家
           room.playerOrder = room.playerOrder.filter(id => id !== socket.id);
@@ -481,9 +478,6 @@ io.on('connection', (socket) => {
          }
 
          io.to(currentRoomId).emit('player_list_updated', Object.values(room.players).map(p => ({ id: p.id, position: p.position, ready: p.ready })));
-
-
-         // 如果断开连接的是当前玩家，轮到下一个
          if (room.currentPlayerId === socket.id && room.state === 'started') {
               const playerIdsInRoom = Object.keys(room.players);
               if (playerIdsInRoom.length > 0) {
@@ -496,20 +490,13 @@ io.on('connection', (socket) => {
                           if (nextIndex === currentIndex) break;
                     }
                     if (room.players[room.playerOrder[nextIndex]]) {
-                        room.currentPlayerId = room.playerOrder[nextIndex];
-                        io.to(currentRoomId).emit('next_turn', { playerId: room.currentPlayerId });
+ room.currentPlayerId = room.playerOrder[nextIndex];
+ io.to(currentRoomId).emit('next_turn', { playerId: room.currentPlayerId });
                     } else {
-                        // 房间内没有玩家了，重置房间
-                        resetGame(currentRoomId);
-                         delete rooms[currentRoomId]; // 删除空房间
-                         console.log(`房间 ${currentRoomId} 已删除 (所有玩家离开)`);
+ // 房间内没有玩家了，重置游戏或通知游戏结束
+ io.to(currentRoomId).emit('game_over', { winnerId: null, message: '玩家不足，游戏结束' });
                     }
-
               } else {
-                   // 房间内没有玩家了，重置房间
-                   resetGame(currentRoomId);
-                    delete rooms[currentRoomId]; // 删除空房间
-                    console.log(`房间 ${currentRoomId} 已删除 (所有玩家离开)`);
               }
          }
 
