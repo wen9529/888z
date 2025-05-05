@@ -273,7 +273,8 @@ io.on('connection', (socket) => {
             if (room.players[id].hand.some(card => card.rank === '3' && card.suit === 'H')) {
                 startPlayerId = id;
             }
-        });
+        }); // 添加缺少的右花括号
+
 
         // 确定玩家顺序，红桃3玩家先出牌
         room.playerOrder = playerIdsInRoom;
@@ -372,7 +373,6 @@ io.on('connection', (socket) => {
              io.to(currentRoomId).emit('next_turn', { playerId: room.currentPlayerId });
         }
 
-   });
    });
 
     // 玩家过牌
