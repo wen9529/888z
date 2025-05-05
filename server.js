@@ -373,6 +373,7 @@ io.on('connection', (socket) => {
         }
 
    });
+   });
 
     // 玩家过牌
     socket.on('pass_turn', () => {
