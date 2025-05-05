@@ -464,9 +464,9 @@ io.on('connection', (socket) => {
      if (currentRoomId && rooms[currentRoomId]) {
          const room = rooms[currentRoomId];
 
+ let position = room.players[socket.id]?.position;
          if (room.players[socket.id]?.ready) {
  room.readyPlayers--;
- let position = room.players[socket.id]?.position;
         }
 
           // 从玩家顺序中移除断开连接的玩家
@@ -496,7 +496,7 @@ io.on('connection', (socket) => {
  io.to(currentRoomId).emit('game_over', { winnerId: null, message: '玩家不足，游戏结束' });
                     }
               } else {
- }        }
+}        }
 
 
           // 如果断开连接导致房间玩家不足，且游戏已开始，结束游戏并重置房间
@@ -514,7 +514,6 @@ io.on('connection', (socket) => {
 
      }
 
-  });
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
