@@ -54,7 +54,9 @@ function initializeDeck() {
 // 发牌 (与之前相同)
 function dealCards(deck) {
     const hands = [[], [], [], []];
-    for (let i = 0; i < deck.length; i++) {
+    // Ensure each of the four players receives exactly 13 cards
+    const numPlayers = 4;
+    for (let i = 0; i < deck.length; i++) { // The deck has 52 cards
         hands[i % 4].push(deck[i]);
     }
      const rankOrder = ['3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A', '2'];
