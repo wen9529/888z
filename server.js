@@ -56,10 +56,6 @@
  // 房间管理
  const rooms = {};
 
- //io连接
- io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
- });
 
 // Function to create a player object
 function createPlayer(id,username) {
@@ -88,6 +84,17 @@ function createRoom(roomId) {
 
 // Modify io.on('connection') to handle player joining
 io.on('connection', (socket) => {
+  console.log('A user connected:', socket.id);
+
+ // rankOrder needs to be defined within or accessible by checkPlay
+ // Assuming rankOrder is defined elsewhere or should be defined here
+ const rankOrder = ['3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A', '2'];
+ const suitOrder = ['C', 'D', 'H', 'S'];
+
+  // Simplified checkPlay for demonstration - integrate your actual checkPlay logic here
+  // You'll need to make sure any helper functions used by checkPlay (like getPlayType, comparePlays, getCardValue)
+  // are also defined within this connection handler or are accessible in its scope.
+
   console.log('A user connected:', socket.id);
 
  function checkPlay(play, lastPlay) {
@@ -238,7 +245,6 @@ io.on('connection', (socket) => {
         // 可以实现观战逻辑
         return;
    }
-
        // 添加玩家到房间
        room.players[socket.id] = {
             id: socket.id,
@@ -264,6 +270,139 @@ io.on('connection', (socket) => {
         room.ready = true; // 标记房间准备好开始游戏
         initializeGame(fixedRoomId);
         }
+
+
+    // 玩家出牌
+
+ socket.on('play_cards', (cards) => {
+        if (!currentRoomId || !rooms[currentRoomId]) {
+             socket.emit('error', '您不在任何房间中');
+             return;
+        }
+        const room = rooms[currentRoomId];
+
+        if (socket.id !== room.currentPlayerId || room.state !== 'started') {
+            socket.emit('error', '现在不是你的回合或游戏未开始');
+            return;
+        }
+
+         if (!Array.isArray(cards) || cards.length === 0) {
+             socket.emit('error', '请选择要出的牌');
+             return;
+         }
+
+        // 检查玩家手牌是否包含要出的牌
+        const playerHandRanks = room.players[socket.id].hand.map(card => `${card.rank}${card.suit}`.toUpperCase()); // 确保比较时大小写一致
+        const validPlayInHand = cards.every(card =>
+             playerHandRanks.includes(`${card.rank}${card.suit}`)
+        );
+
+
+        if (!validPlayInHand) {
+            socket.emit('error', '你没有这些牌');
+            return;
+        }
+
+        // 检查牌型是否合法且大于桌面上的牌
+        const playCheck = checkPlay(cards, room.currentPlay);
+
+        if (!playCheck.valid) {
+             socket.emit('error', '出的牌不合法');
+             return;
+        }
+
+         if (room.currentPlay && room.currentPlay.length > 0 && !playCheck.stronger) {
+              socket.emit('error', '出的牌不够大');
+              return;
+         }
+
+
+        // 从玩家手牌中移除出的牌
+        for (const card of cards) {
+            const index = room.players[socket.id].hand.findIndex(hCard => hCard.rank === card.rank && hCard.suit === card.suit);
+            if (index !== -1) {
+                room.players[socket.id].hand.splice(index, 1);
+            }
+        }
+
+        room.currentPlay = cards; // 更新桌面上的牌
+        room.lastPlay = cards; // 更新上一回合出的牌
+        room.lastPlayPlayerId = socket.id; // 更新上一回合出牌玩家
+        room.passedPlayers = 0; // 重置连续过牌计数
+
+        io.to(currentRoomId).emit('cards_played', { playerId: socket.id, play: cards, handSize: room.players[socket.id].hand.length }); // 通知房间内所有玩家出的牌
+
+        // 检查游戏是否结束
+        if (room.players[socket.id].hand.length === 0) {
+             io.to(currentRoomId).emit('game_over', { winnerId: socket.id });
+             room.state = 'game_over';
+             // TODO: 计算得分等结束逻辑
+        } else {
+            // 轮到下一个玩家
+            const currentIndex = room.playerOrder.indexOf(room.currentPlayerId);
+            room.currentPlayerId = room.playerOrder[(currentIndex + 1) % room.playerOrder.length];
+             io.to(currentRoomId).emit('next_turn', { playerId: room.currentPlayerId });
+        }
+
+   });
+    // 玩家请求重置游戏
+    socket.on('request_reset', () => {
+         if (!currentRoomId || !rooms[currentRoomId]) {
+             socket.emit('error', '您不在任何房间中');
+             return;
+        }
+         resetGame(currentRoomId);
+   });
+    socket.on('pass_turn', () => {
+             socket.emit('error', '您不在任何房间中');
+             return;
+        const room = rooms[currentRoomId];
+
+        if (socket.id !== room.currentPlayerId || room.state !== 'started') {
+            socket.emit('error', '现在不是你的回合或游戏未开始');
+            return;
+        }
+
+        // 只有当桌面上有牌时才能过牌
+         if (!room.currentPlay || room.currentPlay.length === 0) {
+              socket.emit('error', '你是第一个出牌，不能过牌');
+              return;
+         }
+
+        io.to(currentRoomId).emit('player_passed', { playerId: socket.id }); // 通知玩家过牌
+
+        room.passedPlayers++; // 增加连续过牌计数
+
+        // 判断是否一轮结束 (除了出牌的玩家，其他人都过牌了)
+         const playersInRoomCount = Object.keys(room.players).length;
+         if (room.passedPlayers === playersInRoomCount - 1) {
+              console.log(`房间 ${currentRoomId} 一轮结束，清空桌面`);
+              room.currentPlay = []; // 清空桌面上的牌
+              room.lastPlay = null; // 清空上一回合出的牌
+              room.lastPlayPlayerId = null; // 清空上一回合出牌玩家
+              room.passedPlayers = 0; // 重置连续过牌计数
+
+              // 轮到上一个出牌的玩家开始新的一轮
+               if (room.lastPlayPlayerId) {
+                    room.currentPlayerId = room.lastPlayPlayerId;
+                    console.log(`房间 ${currentRoomId} 新一轮由上一个出牌玩家 ${room.currentPlayerId} 开始`);
+               } else {
+                    // 理论上不会发生，但作为备用，轮到当前玩家的下一个
+                    const currentIndex = room.playerOrder.indexOf(room.currentPlayerId);
+                    room.currentPlayerId = room.playerOrder[(currentIndex + 1) % room.playerOrder.length];
+               }
+
+               // 通知客户端清空桌面牌并更新回合
+              io.to(currentRoomId).emit('round_ended'); // 新增事件通知客户端一轮结束
+              io.to(currentRoomId).emit('next_turn', { playerId: room.currentPlayerId });
+
+         } else {
+              // 轮到下一个玩家
+             const currentIndex = room.playerOrder.indexOf(room.currentPlayerId);
+             room.currentPlayerId = room.playerOrder[(currentIndex + 1) % room.playerOrder.length];
+              io.to(currentRoomId).emit('next_turn', { playerId: room.currentPlayerId });
+         }
+    });
 
 
     // 初始化游戏（洗牌、发牌、确定起始玩家）
@@ -384,8 +523,8 @@ io.on('connection', (socket) => {
         }
 
    });
- });
-    // 玩家请求重置游戏
+
+  // 玩家请求重置游戏
     socket.on('request_reset', () => {
          if (!currentRoomId || !rooms[currentRoomId]) {
              socket.emit('error', '您不在任何房间中');
@@ -570,4 +709,5 @@ function initializeGame(roomId) {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
  console.log(`Server running on http://localhost:${PORT}`);
+});
 });
