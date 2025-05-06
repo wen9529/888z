@@ -4,55 +4,20 @@ const socket = io();
 // DOM元素获取
 const usernameInput = document.getElementById('username');
 const connectButton = document.getElementById('connect-button');
-const gameArea = document.getElementById('game-area');
-
-// 连接成功
-socket.on('connect', () => {
-    console.log('连接到服务器');
-});
-
-// 连接错误
-socket.on('connect_error', (error) => {
-    console.error('WebSocket连接错误:', error);
-});
-
-// 断开连接
-// 更新玩家列表
-socket.on('player_list', (players) => {
-const usernameInput = document.getElementById('username');
-const connectButton = document.getElementById('connect-button');
-const gameArea = document.getElementById('game-area');
+const usernameSection = document.getElementById('username-section');
+const roomSelection = document.getElementById('room-selection'); // 更改为 room-selection
+const lobbyElement = document.getElementById('lobby'); // 获取大厅元素
+const joinRoomButton = document.getElementById('join-room-button'); // 获取加入房间按钮
+const readyButton = document.getElementById('ready-button'); // 获取准备按钮
+const gameContainer = document.getElementById('game-container'); // 更改为 game-container
 const playerNameElement = document.getElementById('player-name');
 const playerListElement = document.getElementById('player-list');
-const cardsElement = document.getElementById('cards');
-const playArea = document.getElementById('play-area');
-const playButton = document.getElementById('play-button');
-const passButton = document.getElementById('pass-button');
-const gameStatusElement = document.getElementById('game-status');
+const cardsElement = document.getElementById('player-bottom').querySelector('.cards'); // 获取玩家自己的手牌区域
+const cardTable = document.getElementById('card-table'); // 更改为 card-table
+const playButton = document.getElementById('play-cards-button'); // 更改为 play-cards-button
+const passButton = document.getElementById('pass-turn-button'); // 更改为 pass-turn-button
+const gameStatusElement = document.getElementById('turn-indicator'); // 更改为 turn-indicator
 const errorMessageElement = document.getElementById('error-message'); // 获取错误信息显示区域
-const usernameSection = document.getElementById('username-section');
-const gameSection = document.getElementById('game-section'); // 新增游戏界面容器
-
-const playerAreas = {
- player1: document.getElementById('player-1-area'),
- player2: document.getElementById('player-2-area'),
- player3: document.getElementById('player-3-area'),
- player4: document.getElementById('player-4-area'),
-};
-const playerNames = {
- player1: document.getElementById('player-1-name'),
- player2: document.getElementById('player-2-name'),
- player3: document.getElementById('player-3-name'),
- player4: document.getElementById('player-4-name'),
-};
-const playerHands = {
- player1: document.getElementById('player-1-hand'),
- player2: document.getElementById('player-2-hand'),
- player3: document.getElementById('player-3-hand'),
- player4: document.getElementById('player-4-hand'),
-};
-
-
 let playerList = []; // 存储玩家列表
 let myPlayerId = null; // 存储当前玩家的ID
 let selectedCards = []; // 存储当前选中的牌
