@@ -355,7 +355,6 @@ io.on('connection', (socket) => {
    });
     socket.on('pass_turn', () => {
              socket.emit('error', '您不在任何房间中');
-             return;
         const room = rooms[currentRoomId];
 
         if (socket.id !== room.currentPlayerId || room.state !== 'started') {
