@@ -265,7 +265,7 @@ io.on('connection', (socket) => {
         initializeGame(fixedRoomId);
         }
 
- }); // This is the closing brace for the io.on('connection', ...) block
+
     // 初始化游戏（洗牌、发牌、确定起始玩家）
    function initializeGame(roomId) {
         const room = rooms[roomId];
@@ -312,7 +312,8 @@ io.on('connection', (socket) => {
    }
 
    // 玩家出牌
-    socket.on('play_cards', (cards) => {
+
+ socket.on('play_cards', (cards) => {
         if (!currentRoomId || !rooms[currentRoomId]) {
              socket.emit('error', '您不在任何房间中');
              return;
@@ -383,7 +384,7 @@ io.on('connection', (socket) => {
         }
 
    });
-
+ });
     // 玩家请求重置游戏
     socket.on('request_reset', () => {
          if (!currentRoomId || !rooms[currentRoomId]) {
