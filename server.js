@@ -268,7 +268,7 @@ io.on('connection', (socket) => {
         room.ready = true; // 标记房间准备好开始游戏
         initializeGame(fixedRoomId);
         }
-    });
+    }); // 删除了这个多余的关闭括号
 
 
     // 初始化游戏（洗牌、发牌、确定起始玩家）
@@ -448,7 +448,7 @@ io.on('connection', (socket) => {
               io.to(currentRoomId).emit('next_turn', { playerId: room.currentPlayerId });
          }
     });
-});
+// });  // 这个括号是之前多余的，应该和上面的对应
 
     // 重置游戏状态 (现在接受 roomId 参数)
     function resetGame(roomId) {
