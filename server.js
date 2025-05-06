@@ -91,10 +91,6 @@ io.on('connection', (socket) => {
   console.log('A user connected:', socket.id);
 
  function checkPlay(play, lastPlay) {
-    const rankOrder = ['3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A', '2'];
-    const suitOrder = ['C', 'D', 'H', 'S'];
-
-    // 辅助函数：获取牌的数值
     const getCardValue = (card) => {
         return rankOrder.indexOf(card.rank) * 4 + suitOrder.indexOf(card.suit);
     };
@@ -269,7 +265,7 @@ io.on('connection', (socket) => {
         initializeGame(fixedRoomId);
         }
 
-
+ }); // This is the closing brace for the io.on('connection', ...) block
     // 初始化游戏（洗牌、发牌、确定起始玩家）
    function initializeGame(roomId) {
         const room = rooms[roomId];
@@ -314,10 +310,6 @@ io.on('connection', (socket) => {
  players: Object.values(room.players).map(p => ({ id: p.id, username: p.username, handSize: p.hand.length }))
         });
    }
-
-// Modify io.on('connection') to handle player playing cards and passing turn
- socket.on('play_cards', (cards) => {
-        // 玩家出牌
 
    // 玩家出牌
     socket.on('play_cards', (cards) => {
@@ -450,7 +442,6 @@ io.on('connection', (socket) => {
               io.to(currentRoomId).emit('next_turn', { playerId: room.currentPlayerId });
          }
     });
-// });  // 这个括号是之前多余的，应该和上面的对应
 
     // 重置游戏状态 (现在接受 roomId 参数)
     function resetGame(roomId) {
