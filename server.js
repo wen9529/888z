@@ -224,7 +224,6 @@ io.on('connection', (socket) => {
 
 }
 
-io.on('connection', (socket) => {
   console.log('一个用户连接：', socket.id);
 
   const fixedRoomId = '1'; // 固定房间号
@@ -390,6 +389,15 @@ io.on('connection', (socket) => {
         }
 
    });
+
+    // 玩家请求重置游戏
+    socket.on('request_reset', () => {
+         if (!currentRoomId || !rooms[currentRoomId]) {
+             socket.emit('error', '您不在任何房间中');
+             return;
+        }
+         resetGame(currentRoomId);
+   });
     socket.on('pass_turn', () => {
              socket.emit('error', '您不在任何房间中');
              return;
@@ -463,15 +471,6 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('game_reset');
          io.to(roomId).emit('player_list_updated', Object.values(room.players).map(p => ({ id: p.id, position: p.position, ready: p.ready })));
     }
-
-     // 玩家请求重置游戏
-    socket.on('request_reset', () => {
-         if (!currentRoomId || !rooms[currentRoomId]) {
-             socket.emit('error', '您不在任何房间中');
-             return;
-        }
-         resetGame(currentRoomId);
-    });
 
 
   socket.on('disconnect', () => {
