@@ -1,25 +1,27 @@
 // 连接WebSocket服务器
 const socket = io();
 
-// DOM元素获取
+// DOM元素引用
 const usernameInput = document.getElementById('username');
 const connectButton = document.getElementById('connect-button');
 const usernameSection = document.getElementById('username-section');
 const roomSelection = document.getElementById('room-selection');
-const lobbyElement = document.getElementById('lobby'); // 获取大厅元素
-const joinRoomButton = document.getElementById('join-room-button'); // 获取加入房间按钮
-const readyButton = document.getElementById('ready-button'); // 获取准备按钮
-const gameArea = document.getElementById('game-container'); // 更改为 game-container
-const playerNameElement = document.getElementById('current-room-display'); // Using this to display room info
-const playerListElement = document.getElementById('player-list');
-const cardsElement = document.getElementById('player-bottom').querySelector('.cards'); // 获取玩家自己的手牌区域
-const cardTable = document.getElementById('card-table'); // 更改为 card-table
-const playButton = document.getElementById('play-cards-button'); // 更改为 play-cards-button
-const passButton = document.getElementById('pass-turn-button'); // 更改为 pass-turn-button
-const gameStatusElement = document.getElementById('turn-indicator');
-const errorMessageElement = document.getElementById('error-message'); // 获取错误信息显示区域
-const currentPlayArea = document.getElementById('current-play').querySelector('.cards'); // 获取当前桌面上的牌区域
-const createRoomButton = document.getElementById('create-room-button'); // 获取创建房间按钮
+const lobbyElement = document.getElementById('lobby');
+const joinRoomButton = document.getElementById('join-room-button');
+const readyButton = document.getElementById('ready-button');
+const gameArea = document.getElementById('game-container');
+const playerNameElement = document.getElementById('current-room-display');
+const playerListElement = document.getElementById('player-list'); // player-list
+const cardsElement = document.querySelector('#player-bottom .cards'); // Updated to match index.html structure
+const cardTable = document.getElementById('card-table');
+const playButton = document.getElementById('play-cards-button');
+const passButton = document.getElementById('pass-turn-button');
+const gameStatusElement = document.getElementById('turn-indicator'); // Changed to match index.html
+const errorMessageElement = document.getElementById('error-message');
+const currentPlayArea = document.querySelector('#current-play .cards');
+
+
+
 
 const playerAreas = {
     player1: document.getElementById('player-bottom'), // Changed to match ID in index.html
@@ -28,16 +30,16 @@ const playerAreas = {
     player4: document.getElementById('player-right'), // Changed to match ID in index.html
 };
 const playerNames = {
-    player1: playerAreas.player1.querySelector('.player-name'),
-    player2: playerAreas.player2.querySelector('.player-name'),
-    player3: playerAreas.player3.querySelector('.player-name'),
-    player4: playerAreas.player4.querySelector('.player-name'),
+    player1: document.querySelector('#player-bottom h3'),
+    player2: document.querySelector('#player-left h3'),
+    player3: document.querySelector('#player-top h3'),
+    player4: document.querySelector('#player-right h3'),
 };
 const playerHands = {
-    player1: playerAreas.player1.querySelector('.hand-size'), // Assuming a .hand-size element exists
-    player2: playerAreas.player2.querySelector('.hand-size'),
-    player3: playerAreas.player3.querySelector('.hand-size'),
-    player4: playerAreas.player4.querySelector('.hand-size'),
+    player1: document.querySelector('#player-bottom .cards'),
+    player2: document.querySelector('#player-left .cards'),
+    player3: document.querySelector('#player-top .cards'),
+    player4: document.querySelector('#player-right .cards'),
 };
 
 
@@ -81,7 +83,7 @@ socket.on('joined_room', (data) => {
     usernameSection.style.display = 'none'; // 隐藏用户名选择界面
     roomSelection.style.display = 'none'; // Hide room selection
     lobbyElement.style.display = 'block'; // 显示大厅界面
-    playerNameElement.textContent = `房间 ${data.roomId}`; // 在大厅显示房间号
+    playerNameElement.textContent = data.roomId; // 在大厅显示房间号
     // updatePlayerList(data.players); // 在大厅显示玩家列表 (optional based on UI)
 });
 
@@ -105,7 +107,7 @@ socket.on('your_hand', (hand) => {
 // 更新牌桌上的牌
 socket.on('cards_played', (data) => {
     console.log('牌桌上的牌更新:', data.play);
-    displayPlayArea(data.play); // 显示牌桌上的牌
+     displayPlayArea(data.play);
     // Update hand size for the player who played
     const playedPlayer = playerList.find(p => p.id === data.playerId);
     if (playedPlayer) {
@@ -228,8 +230,8 @@ function updatePlayerList(players) {
     // Example for a list in the lobby:
     const listElement = document.getElementById('lobby-player-list');
     if (listElement) {
-        listElement.innerHTML = ''; // Clear existing list
-        players.forEach(player => {
+         listElement.innerHTML = '';
+         players.forEach(player => {
             const li = document.createElement('li');
             li.textContent = `${player.username} ${player.ready ? '(已准备)' : ''}`;
             if (player.id === myPlayerId) {
@@ -243,15 +245,15 @@ function updatePlayerList(players) {
 // 检查图片是否存在，如果不存在则显示文字
 function checkImage(cardElement, card) {
     const img = new Image();
-    img.onload = function() {
-        // Image exists, set background image
-        cardElement.style.backgroundImage = `url('images/${card.rank}_of_${card.suit.toLowerCase()}.png')`;
-    };
     img.onerror = function() {
         // 图片不存在，显示文字
         cardElement.style.backgroundImage = 'none';
-        cardElement.classList.add('text-only'); // Add text-only class
-        cardElement.textContent = `${card.rank}${card.suit}`; // Display card text
+        cardElement.classList.add('text-only');
+        cardElement.textContent = `${card.rank}${card.suit}`;
+    };
+    img.onload = function() {
+        // Image exists, set background image
+        cardElement.style.backgroundImage = `url('images/${card.rank}_of_${card.suit.toLowerCase()}.png')`;
     };
     // Trigger image loading
     img.src = `images/${card.rank}_of_${card.suit.toLowerCase()}.png`;
@@ -259,7 +261,7 @@ function checkImage(cardElement, card) {
 
 // 显示玩家手牌
 function displayCards(hand) {
-    cardsElement.innerHTML = ''; // 清空现有手牌显示
+     cardsElement.innerHTML = '';
     hand.forEach(card => {
         const cardElement = document.createElement('div');
         cardElement.classList.add('card');
@@ -286,7 +288,7 @@ function displayCards(hand) {
 
 // 显示牌桌上的牌
 function displayPlayArea(play) {
-    currentPlayArea.innerHTML = ''; // 清空现有牌桌显示
+    currentPlayArea.innerHTML = '';
     if (play && play.length > 0) {
         play.forEach(card => {
             const cardElement = document.createElement('div');
@@ -305,20 +307,19 @@ function displayPlayArea(play) {
 // 更新玩家区域显示
 function updatePlayerAreas(players, myPlayerId) {
     // Define potential positions based on the number of players
-    const positions = ['player1', 'player2', 'player3', 'player4'];
-    const numPlayers = players.length;
-    const myIndex = players.findIndex(p => p.id === myPlayerId);
+     const positions = ['player1', 'player2', 'player3', 'player4'];
+     const numPlayers = players.length;
+     const myIndex = players.findIndex(p => p.id === myPlayerId);
 
-    // Clear previous player info and hide areas
-    positions.forEach(pos => {
-        if (playerNames[pos]) playerNames[pos].textContent = '';
-        if (playerHands[pos]) playerHands[pos].textContent = '';
-        if (playerAreas[pos]) playerAreas[pos].style.display = 'none';
-    });
+     // Clear previous player info and hide areas
+     positions.forEach(pos => {
+         if (playerNames[pos]) playerNames[pos].textContent = '';
+         if (playerHands[pos]) playerHands[pos].innerHTML = '';
+         if (playerAreas[pos]) playerAreas[pos].style.display = 'none';
+     });
 
     if (myIndex === -1) {
         console.error("Current player not found in player list");
-        return;
     }
 
     // Map player IDs to display positions based on current player's position
@@ -327,7 +328,6 @@ function updatePlayerAreas(players, myPlayerId) {
         const playerIndex = (myIndex + i) % numPlayers;
         playerDisplayMapping[players[playerIndex].id] = positions[i];
     }
-
 
     // Display players based on the mapping
     players.forEach(player => {
@@ -338,10 +338,9 @@ function updatePlayerAreas(players, myPlayerId) {
                  playerNames[displayPosition].textContent = player.username;
             }
             if (player.id !== myPlayerId && playerHands[displayPosition]) {
-                // Display hand size for other players
-                playerHands[displayPosition].textContent = `手牌数: ${player.handSize}`;
+               // Display hand size for other players
             } else if (playerHands[displayPosition]) {
-                 // Clear hand size for the current player (hand is displayed separately)
+                 // Clear hand size for the current player
                  playerHands[displayPosition].textContent = '';
             }
         }
@@ -359,13 +358,6 @@ connectButton.addEventListener('click', () => {
         roomSelection.style.display = 'block';
     } else {
         alert('请输入用户名');
-    }
-});
-
-// 创建房间按钮点击事件
-if (createRoomButton) { // Check if button exists
-    createRoomButton.addEventListener('click', () => {
-        socket.emit('create_room');
     });
 }
 
@@ -398,14 +390,12 @@ playButton.addEventListener('click', () => {
         selectedCards = []; // 清空选中牌
         // Deselect cards visually (optional but good UX)
         document.querySelectorAll('.card.selected').forEach(cardEl => {
-            cardEl.classList.remove('selected');
-        });
+            cardEl.classList.remove('selected')});
     } else {
         alert('请选择要出的牌');
     }
 });
 
-// 过牌按钮点击事件
 passButton.addEventListener('click', () => {
     socket.emit('pass_turn');
     selectedCards = []; // 清空选中牌
@@ -414,7 +404,6 @@ passButton.addEventListener('click', () => {
         cardEl.classList.remove('selected');
     });
 });
-
 
 // 客户端错误处理 (可选)
 window.onerror = (message, source, lineno, colno, error) => {

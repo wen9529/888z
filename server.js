@@ -155,10 +155,21 @@ io.on('connection', (socket) => {
         const len = play.length;
         if (len === 0) return { type: 'none', valid: false };
 
+        //Count ranks
         const rankCounts = {};
         play.forEach(card => {
             rankCounts[card.rank] = (rankCounts[card.rank] || 0) + 1;
         });
+        //Count suit
+        const suitCounts = {};
+        play.forEach(card => {
+           suitCounts[card.suit] = (suitCounts[card.suit] || 0) + 1;
+       });
+
+        const uniqueSuits = Object.keys(suitCounts);
+        const numUniqueSuits = uniqueSuits.length;
+
+
         const uniqueRanks = Object.keys(rankCounts);
         const numUniqueRanks = uniqueRanks.length;
 
@@ -180,6 +191,18 @@ io.on('connection', (socket) => {
             return { type: 'bomb', valid: true };
         }
 
+        //Full House
+        if (len === 5 && numUniqueRanks === 2 && (Object.values(rankCounts).includes(3) && Object.values(rankCounts).includes(2))) {
+            return { type: 'fullhouse', valid: true };
+        }
+        //Flush
+        if (len >= 5 && numUniqueSuits === 1) {
+            return { type: 'flush', valid: true };
+        }
+
+
+
+
         if (len >= 5 && numUniqueRanks === len) {
             let isStraight = true;
             for (let i = 0; i < len - 1; i++) {
@@ -191,7 +214,10 @@ io.on('connection', (socket) => {
                 }
             }
             if (isStraight) return { type: 'straight', valid: true };
-        }
+        }        
+        if (len >= 5 && numUniqueRanks === len && numUniqueSuits === 1) {
+            return { type: 'straightflush', valid: true };
+       }
 
         // TODO: Add other hand types (full house, flush, straight flush, etc.)
 
@@ -202,14 +228,33 @@ io.on('connection', (socket) => {
         const type1 = getPlayType(play1).type;
         const type2 = getPlayType(play2).type;
 
-        if (type1 === 'bomb' && type2 !== 'bomb') return true;
-        if (type1 !== 'bomb' && type2 === 'bomb') return false;
+        //console.log("comparePlays:", type1, type2)
 
-        if (type1 === type2) {
-            if (type1 === 'single' || type1 === 'pair' || type1 === 'triple' || type1 === 'bomb') {
-                return getCardValue(play1[play1.length - 1]) > getCardValue(play2[play2.length - 1]);
-            } else if (type1 === 'straight') {
-                return getCardValue(play1[play1.length - 1]) > getCardValue(play2[play2.length - 1]);
+        const typeOrder = ['single', 'pair', 'triple', 'straight', 'flush', 'fullhouse','bomb','straightflush'];
+
+        const rank1 = play1[play1.length - 1].rank;
+        const rank2 = play2[play2.length - 1].rank;
+
+        const suit1 = play1[play1.length - 1].suit;
+        const suit2 = play2[play2.length - 1].suit;
+
+        const rankCompare = rankOrder.indexOf(rank1) - rankOrder.indexOf(rank2);
+        const suitCompare = suitOrder.indexOf(suit1) - suitOrder.indexOf(suit2);
+
+        if(type1 == 'flush' && type2 == 'flush'){
+            if(rankCompare == 0) return suitCompare > 0;
+            return rankCompare > 0
+        }
+        if(type1 == 'fullhouse' && type2 == 'fullhouse'){
+            return rankCompare > 0
+        }
+        
+        if (type1 === 'bomb' && type2 !== 'bomb') return true;
+        if (type1 !== 'bomb' && type2 === 'bomb') return false;        
+        if (type1 === 'straightflush' && type2 !== 'straightflush') return true;
+        if (type1 !== 'straightflush' && type2 === 'straightflush') return false;
+
+        if (type1 === type2) {           
             }
             // TODO: Add other hand type comparisons
         }
