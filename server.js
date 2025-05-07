@@ -271,20 +271,19 @@ io.on('connection', (socket) => {
         initializeGame(fixedRoomId);
         }
 
-
-    // 玩家出牌
-
- socket.on('play_cards', (cards) => {
+    // Handle player playing cards
+    socket.on('play_cards', (cards) => {
         if (!currentRoomId || !rooms[currentRoomId]) {
-             socket.emit('error', '您不在任何房间中');
-             return;
+            socket.emit('error', '您不在任何房间中');
+            return;
         }
         const room = rooms[currentRoomId];
 
         if (socket.id !== room.currentPlayerId || room.state !== 'started') {
             socket.emit('error', '现在不是你的回合或游戏未开始');
             return;
-        }
+       }
+
 
          if (!Array.isArray(cards) || cards.length === 0) {
              socket.emit('error', '请选择要出的牌');
@@ -344,18 +343,15 @@ io.on('connection', (socket) => {
              io.to(currentRoomId).emit('next_turn', { playerId: room.currentPlayerId });
         }
 
-   });
+    });
     // 玩家请求重置游戏
     socket.on('request_reset', () => {
          if (!currentRoomId || !rooms[currentRoomId]) {
-             socket.emit('error', '您不在任何房间中');
-             return;
+            socket.emit('error', '您不在任何房间中'); return;
         }
          resetGame(currentRoomId);
    });
-    socket.on('pass_turn', () => {
-             socket.emit('error', '您不在任何房间中');
-        const room = rooms[currentRoomId];
+    socket.on('pass_turn', () => {        const room = rooms[currentRoomId];
 
         if (socket.id !== room.currentPlayerId || room.state !== 'started') {
             socket.emit('error', '现在不是你的回合或游戏未开始');
@@ -447,140 +443,7 @@ io.on('connection', (socket) => {
             // 发送给客户端的玩家信息只包含需要公开的信息，例如手牌数量
  players: Object.values(room.players).map(p => ({ id: p.id, username: p.username, handSize: p.hand.length }))
         });
-   }
-
-   // 玩家出牌
-
- socket.on('play_cards', (cards) => {
-        if (!currentRoomId || !rooms[currentRoomId]) {
-             socket.emit('error', '您不在任何房间中');
-             return;
-        }
-        const room = rooms[currentRoomId];
-
-        if (socket.id !== room.currentPlayerId || room.state !== 'started') {
-            socket.emit('error', '现在不是你的回合或游戏未开始');
-            return;
-        }
-
-         if (!Array.isArray(cards) || cards.length === 0) {
-             socket.emit('error', '请选择要出的牌');
-             return;
-         }
-
-        // 检查玩家手牌是否包含要出的牌
-        const playerHandRanks = room.players[socket.id].hand.map(card => `${card.rank}${card.suit}`.toUpperCase()); // 确保比较时大小写一致
-        const validPlayInHand = cards.every(card =>
-             playerHandRanks.includes(`${card.rank}${card.suit}`)
-        );
-
-
-        if (!validPlayInHand) {
-            socket.emit('error', '你没有这些牌');
-            return;
-        }
-
-        // 检查牌型是否合法且大于桌面上的牌
-        const playCheck = checkPlay(cards, room.currentPlay);
-
-        if (!playCheck.valid) {
-             socket.emit('error', '出的牌不合法');
-             return;
-        }
-
-         if (room.currentPlay && room.currentPlay.length > 0 && !playCheck.stronger) {
-              socket.emit('error', '出的牌不够大');
-              return;
-         }
-
-
-        // 从玩家手牌中移除出的牌
-        for (const card of cards) {
-            const index = room.players[socket.id].hand.findIndex(hCard => hCard.rank === card.rank && hCard.suit === card.suit);
-            if (index !== -1) {
-                room.players[socket.id].hand.splice(index, 1);
-            }
-        }
-
-        room.currentPlay = cards; // 更新桌面上的牌
-        room.lastPlay = cards; // 更新上一回合出的牌
-        room.lastPlayPlayerId = socket.id; // 更新上一回合出牌玩家
-        room.passedPlayers = 0; // 重置连续过牌计数
-
-        io.to(currentRoomId).emit('cards_played', { playerId: socket.id, play: cards, handSize: room.players[socket.id].hand.length }); // 通知房间内所有玩家出的牌
-
-        // 检查游戏是否结束
-        if (room.players[socket.id].hand.length === 0) {
-             io.to(currentRoomId).emit('game_over', { winnerId: socket.id });
-             room.state = 'game_over';
-             // TODO: 计算得分等结束逻辑
-        } else {
-            // 轮到下一个玩家
-            const currentIndex = room.playerOrder.indexOf(room.currentPlayerId);
-            room.currentPlayerId = room.playerOrder[(currentIndex + 1) % room.playerOrder.length];
-             io.to(currentRoomId).emit('next_turn', { playerId: room.currentPlayerId });
-        }
-
-   });
-
-  // 玩家请求重置游戏
-    socket.on('request_reset', () => {
-         if (!currentRoomId || !rooms[currentRoomId]) {
-             socket.emit('error', '您不在任何房间中');
-             return;
-        }
-         resetGame(currentRoomId);
-   });
-    socket.on('pass_turn', () => {
-             socket.emit('error', '您不在任何房间中');
-             return;
-        const room = rooms[currentRoomId];
-
-        if (socket.id !== room.currentPlayerId || room.state !== 'started') {
-            socket.emit('error', '现在不是你的回合或游戏未开始');
-            return;
-        }
-
-        // 只有当桌面上有牌时才能过牌
-         if (!room.currentPlay || room.currentPlay.length === 0) {
-              socket.emit('error', '你是第一个出牌，不能过牌');
-              return;
-         }
-
-        io.to(currentRoomId).emit('player_passed', { playerId: socket.id }); // 通知玩家过牌
-
-        room.passedPlayers++; // 增加连续过牌计数
-
-        // 判断是否一轮结束 (除了出牌的玩家，其他人都过牌了)
-         const playersInRoomCount = Object.keys(room.players).length;
-         if (room.passedPlayers === playersInRoomCount - 1) {
-              console.log(`房间 ${currentRoomId} 一轮结束，清空桌面`);
-              room.currentPlay = []; // 清空桌面上的牌
-              room.lastPlay = null; // 清空上一回合出的牌
-              room.lastPlayPlayerId = null; // 清空上一回合出牌玩家
-              room.passedPlayers = 0; // 重置连续过牌计数
-
-              // 轮到上一个出牌的玩家开始新的一轮
-               if (room.lastPlayPlayerId) {
-                    room.currentPlayerId = room.lastPlayPlayerId;
-                    console.log(`房间 ${currentRoomId} 新一轮由上一个出牌玩家 ${room.currentPlayerId} 开始`);
-               } else {
-                    // 理论上不会发生，但作为备用，轮到当前玩家的下一个
-                    const currentIndex = room.playerOrder.indexOf(room.currentPlayerId);
-                    room.currentPlayerId = room.playerOrder[(currentIndex + 1) % room.playerOrder.length];
-               }
-
-               // 通知客户端清空桌面牌并更新回合
-              io.to(currentRoomId).emit('round_ended'); // 新增事件通知客户端一轮结束
-              io.to(currentRoomId).emit('next_turn', { playerId: room.currentPlayerId });
-
-         } else {
-              // 轮到下一个玩家
-             const currentIndex = room.playerOrder.indexOf(room.currentPlayerId);
-             room.currentPlayerId = room.playerOrder[(currentIndex + 1) % room.playerOrder.length];
-              io.to(currentRoomId).emit('next_turn', { playerId: room.currentPlayerId });
-         }
-    });
+    }
 
     // 重置游戏状态 (现在接受 roomId 参数)
     function resetGame(roomId) {
@@ -605,45 +468,45 @@ io.on('connection', (socket) => {
     }
 
 
-  socket.on('disconnect', () => {
-    console.log('用户断开连接：', socket.id);
+    socket.on('disconnect', () => {
+        console.log('用户断开连接：', socket.id);
 
-     if (currentRoomId && rooms[currentRoomId]) {
-         const room = rooms[currentRoomId];
+        if (currentRoomId && rooms[currentRoomId]) {
+            const room = rooms[currentRoomId];
 
- let position = room.players[socket.id]?.position;
-         if (room.players[socket.id]?.ready) {
- room.readyPlayers--;
-        }
+            let position = room.players[socket.id]?.position;
+            if (room.players[socket.id]?.ready) {
+                room.readyPlayers--;
+            }
 
-          // 从玩家顺序中移除断开连接的玩家
-          room.playerOrder = room.playerOrder.filter(id => id !== socket.id);
+            // 从玩家顺序中移除断开连接的玩家
+            room.playerOrder = room.playerOrder.filter(id => id !== socket.id);
 
-         if (position) {
-             io.to(currentRoomId).emit('player_left', { id: socket.id, position: position });
-         }
+            if (position) {
+                io.to(currentRoomId).emit('player_left', { id: socket.id, position: position });
+            }
 
-         io.to(currentRoomId).emit('player_list_updated', Object.values(room.players).map(p => ({ id: p.id, position: p.position, ready: p.ready })));
-         if (room.currentPlayerId === socket.id && room.state === 'started') {
-              const playerIdsInRoom = Object.keys(room.players);
-              if (playerIdsInRoom.length > 0) {
-                   const currentIndex = room.playerOrder.indexOf(room.currentPlayerId); // 使用更新后的 playerOrder
+            io.to(currentRoomId).emit('player_list_updated', Object.values(room.players).map(p => ({ id: p.id, position: p.position, ready: p.ready })));
+
+            if (room.currentPlayerId === socket.id && room.state === 'started') {
+                const playerIdsInRoom = Object.keys(room.players);
+                if (playerIdsInRoom.length > 0) {
+                    const currentIndex = room.playerOrder.indexOf(room.currentPlayerId); // 使用更新后的 playerOrder
                     // 找到断开连接玩家在顺序中的下一个有效玩家
-                   let nextIndex = (currentIndex + 1) % room.playerOrder.length;
+                    let nextIndex = (currentIndex + 1) % room.playerOrder.length;
                     while (!room.players[room.playerOrder[nextIndex]] && Object.keys(room.players).length > 0) {
-                         nextIndex = (nextIndex + 1) % room.playerOrder.length;
-                         // 如果遍历一圈回到当前位置且玩家仍不存在，说明房间已空
-                          if (nextIndex === currentIndex) break;
+                        nextIndex = (nextIndex + 1) % room.playerOrder.length;
+                        // 如果遍历一圈回到当前位置且玩家仍不存在，说明房间已空
+                        if (nextIndex === currentIndex) break;
                     }
                     if (room.players[room.playerOrder[nextIndex]]) {
- room.currentPlayerId = room.playerOrder[nextIndex];
- io.to(currentRoomId).emit('next_turn', { playerId: room.currentPlayerId });
+                        room.currentPlayerId = room.playerOrder[nextIndex];
+                        io.to(currentRoomId).emit('next_turn', { playerId: room.currentPlayerId });
                     } else {
- // 房间内没有玩家了，重置游戏或通知游戏结束
- io.to(currentRoomId).emit('game_over', { winnerId: null, message: '玩家不足，游戏结束' });
+                        // 房间内没有玩家了，重置游戏或通知游戏结束
+                        io.to(currentRoomId).emit('game_over', { winnerId: null, message: '玩家不足，游戏结束' });
                     }
-              } else {
-
+                }
 
           // 如果断开连接导致房间玩家不足，且游戏已开始，结束游戏并重置房间
           if (room.state === 'started' && Object.keys(room.players).length < 4) {
@@ -657,8 +520,8 @@ io.on('connection', (socket) => {
                 delete rooms[currentRoomId];
                 console.log(`房间 ${currentRoomId} 已删除`);
            }
-          }
-     }
+                }
+        }
  });
 
 
