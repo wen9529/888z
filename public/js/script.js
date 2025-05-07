@@ -1,5 +1,3 @@
-
-
 // 连接WebSocket服务器
 const socket = io();
 
@@ -21,308 +19,33 @@ const passButton = document.getElementById('pass-turn-button'); // 更改为 pas
 const gameStatusElement = document.getElementById('turn-indicator');
 const errorMessageElement = document.getElementById('error-message'); // 获取错误信息显示区域
 const currentPlayArea = document.getElementById('current-play').querySelector('.cards'); // 获取当前桌面上的牌区域
+const createRoomButton = document.getElementById('create-room-button'); // 获取创建房间按钮
+
+const playerAreas = {
+    player1: document.getElementById('player-bottom'), // Changed to match ID in index.html
+    player2: document.getElementById('player-left'), // Changed to match ID in index.html
+    player3: document.getElementById('player-top'),   // Changed to match ID in index.html
+    player4: document.getElementById('player-right'), // Changed to match ID in index.html
+};
+const playerNames = {
+    player1: playerAreas.player1.querySelector('.player-name'),
+    player2: playerAreas.player2.querySelector('.player-name'),
+    player3: playerAreas.player3.querySelector('.player-name'),
+    player4: playerAreas.player4.querySelector('.player-name'),
+};
+const playerHands = {
+    player1: playerAreas.player1.querySelector('.hand-size'), // Assuming a .hand-size element exists
+    player2: playerAreas.player2.querySelector('.hand-size'),
+    player3: playerAreas.player3.querySelector('.hand-size'),
+    player4: playerAreas.player4.querySelector('.hand-size'),
+};
+
 
 let playerList = []; // 存储玩家列表
 let myPlayerId = null; // 存储当前玩家的ID
 let selectedCards = []; // 存储当前选中的牌
 let currentRoomId = null; // 存储当前房间ID
 
-
-// 连接成功
-socket.on('connect', () => {
- console.log('连接到服务器');
-});
-
-// 连接错误
-socket.on('connect_error', (error) => {
- console.error('WebSocket连接错误:', error);
- displayError(`WebSocket连接错误: ${error.message}`); // 在UI上显示连接错误
-});
-
-// 断开连接
-socket.on('disconnect', (reason) => {
- console.log('从服务器断开连接:', reason);
- displayError(`从服务器断开连接: ${reason}`); // 在UI上显示断开连接信息
- // 根据断开连接的原因，可以进行重连尝试或其他处理
-});
-
-// 接收到玩家列表更新 (现在主要用于大厅和游戏开始后的玩家信息)
-socket.on('player_list', (players) => {
- console.log('玩家列表更新:', players);
- playerList = players; // 更新玩家列表
- updatePlayerList(playerList); // 更新玩家列表显示
-});
-
-// 加入房间成功
-socket.on('joined_room', (data) => {
- console.log('成功加入房间:', data);
- myPlayerId = data.playerId; // 存储自己的玩家ID
- currentRoomId = data.roomId;
-
- roomSelection.style.display = 'none'; // 隐藏房间选择界面
- lobbyElement.style.display = 'block'; // 显示大厅界面
- playerNameElement.textContent = data.roomId; // 在大厅显示房间号
- updatePlayerList(data.players); // 显示大厅玩家列表
-});
-
-// 游戏开始
-socket.on('game_started', (data) => {
- console.log('游戏开始:', data);
- lobbyElement.style.display = 'none'; // 隐藏大厅界面
- gameArea.style.display = 'grid'; // 显示游戏界面 (使用grid布局)
- displayCards(data.hand); // 显示玩家手牌
- updatePlayerAreas(data.players, myPlayerId); // 更新玩家区域显示
- readyButton.style.display = 'none'; // 隐藏准备按钮
- gameStatusElement.style.display = 'block'; // 显示回合指示器
-});
-
-// 更新牌桌上的牌
-socket.on('update_play_area', (play) => {
-    console.log('牌桌上的牌更新:', play);
-    displayPlayArea(play); // 显示牌桌上的牌
-});
-
-// 提示轮到谁出牌
-socket.on('next_turn', (data) => {
-    console.log('轮到玩家', data.playerId, '出牌');
-    if (data.playerId === myPlayerId) {
-        gameStatusElement.textContent = '轮到你出牌';
-        playButton.disabled = false; // 启用出牌按钮
-        passButton.disabled = false; // 启用过牌按钮
-    } else {
-        const playerInfo = playerList.find(p => p.id === data.playerId);
-        if (playerInfo) {
-            const playerName = playerInfo.username; // 获取玩家的用户名
-            gameStatusElement.textContent = `轮到 ${playerName} 出牌`;
-        }
-        playButton.disabled = true; // 禁用出牌按钮
-        passButton.disabled = true; // 禁用过牌按钮
-    }
-});
-
-// 游戏结束
-socket.on('game_over', (data) => {
-    console.log('游戏结束:', data);
-    gameStatusElement.textContent = `游戏结束！胜利者是：${data.winnerId}`;
-    // 可以添加其他游戏结束后的处理，例如显示结算信息等
-    // 游戏结束后可以显示重置游戏的按钮或者返回大厅
-});
-
-// 错误信息
-socket.on('game_error', (message) => {
-    console.error('游戏错误:', message);
-    displayError(`游戏发生错误: ${message}`); // 在UI上显示错误信息
-});
-
-// 通用错误处理
-socket.on('error', (message) => {
-    console.error('服务器错误:', message);
-    displayError(`服务器错误: ${message}`);
-});
-
-// 显示错误信息到页面
-function displayError(message) {
-    errorMessageElement.textContent = message;
-    errorMessageElement.style.display = 'block';
-    // 错误信息显示一段时间后自动隐藏
-    setTimeout(() => {
-        errorMessageElement.style.display = 'none';
-    }, 5000); // 5秒后隐藏
-}
-
-// 更新玩家列表显示 (在大厅中使用)
-function updatePlayerList(players) {
-    // 在简化模式下，可能不再需要大厅中的玩家列表，但保留此函数以便将来扩展
-    const listElement = document.getElementById('lobby-player-list'); // 假设大厅玩家列表元素仍然存在
-    if (listElement) {
-        listElement.innerHTML = ''; // 清空现有列表
-        players.forEach(player => {
-            const li = document.createElement('li');
-            li.textContent = `${player.username} (${player.ready ? '已准备' : '未准备'})`; // 在简化模式下ready状态可能不相关
-            if (player.id === myPlayerId) {
-                li.style.fontWeight = 'bold'; // 标记自己
-            }
-            listElement.appendChild(li);
-        });
-    }
-}
-
-// 连接按钮点击事件 (现在改为设置用户名并自动加入房间1)
-connectButton.addEventListener('click', () => {
-    const username = usernameInput.value.trim();
-    if (username) {
-        socket.emit('set_username', username);
-        // 设置用户名后，自动加入固定房间 '1'
-        socket.emit('join_room', '1');
-        // 连接成功并加入房间后，隐藏用户名输入界面，显示游戏界面
-        usernameSection.style.display = 'none';
-        gameSection.style.display = 'block'; // 显示游戏界面
-    } else {
-        alert('请输入用户名');
-    }
-});
-
-// 出牌按钮点击事件
-playButton.addEventListener('click', () => {
-    if (selectedCards.length > 0) {
-        socket.emit('play_cards', selectedCards);
-        selectedCards = []; // 清空选中牌
-    } else {
-        alert('请选择要出的牌');
-    }
-});
-
-// 过牌按钮点击事件
-passButton.addEventListener('click', () => {
-    socket.emit('pass_turn');
-    selectedCards = []; // 清空选中牌
-});
-
-// 检查图片是否存在，如果不存在则显示文字
-function checkImage(cardElement, card) {
-    const img = new Image();
-    img.onerror = function() {
-        // 图片不存在，显示文字
-        cardElement.style.backgroundImage = 'none';
-        cardElement.classList.add('text-only'); // 添加 text-only 类
-        cardElement.textContent = `${card.rank}${card.suit}`; // 显示牌的文字
-    };
-    img.src = `images/${card.rank}_of_${card.suit.toLowerCase()}.png`;
-}
-
-// 显示玩家手牌
-function displayCards(hand) {
-    cardsElement.innerHTML = ''; // 清空现有手牌显示
-    hand.forEach(card => {
-        const cardElement = document.createElement('div');
-        cardElement.classList.add('card');
-        cardElement.dataset.card = `${card.rank}${card.suit}`; // 存储牌的信息
-        cardElement.style.backgroundImage = `url('images/${card.rank}_of_${card.suit.toLowerCase()}.png')`;
-        cardElement.addEventListener('click', () => {
-            // 选中/取消选中牌
-            if (selectedCards.some(c => c.rank === card.rank && c.suit === card.suit)) {
-                selectedCards = selectedCards.filter(c => !(c.rank === card.rank && c.suit === card.suit));
-                cardElement.classList.remove('selected');
-            } else {
-                selectedCards.push(card);
-                cardElement.classList.add('selected');
-            }
-            console.log('当前选中牌:', selectedCards);
-        });
-        checkImage(cardElement, card);
-        cardsElement.appendChild(cardElement);
-    });
-}
-
-// 显示牌桌上的牌
-function displayPlayArea(play) {
-    playArea.innerHTML = ''; // 清空现有牌桌显示
-    if (play && play.length > 0) {
-        play.forEach(card => {
-            const cardElement = document.createElement('div');
-            cardElement.classList.add('card', 'played'); // 添加 played 类
-            cardElement.style.backgroundImage = `url('images/${card.rank}_of_${card.suit.toLowerCase()}.png')`;
-            checkImage(cardElement, card);
-            playArea.appendChild(cardElement);
-        });
-    } else {
-        playArea.textContent = '牌桌上没有牌';
-    }
-}
-
-// 更新玩家区域显示 (在游戏界面中使用)
-function updatePlayerAreas(players, myPlayerId) {
-    // 根据玩家数量和自己的位置，确定其他玩家的位置
-    const playerPositions = {};
-    const myIndex = players.findIndex(p => p.id === myPlayerId);
-    const numPlayers = players.length;
-
-    if (numPlayers === 4) {
-        playerPositions[players[myIndex].id] = 'player1'; // 自己是player1 (底部)
-        playerPositions[players[(myIndex + 1) % numPlayers].id] = 'player2'; // 左边
-        playerPositions[players[(myIndex + 2) % numPlayers].id] = 'player3'; // 顶部
-        playerPositions[players[(myIndex + 3) % numPlayers].id] = 'player4'; // 右边
-    } else if (numPlayers === 3) {
-        playerPositions[players[myIndex].id] = 'player1'; // 自己是player1
-        playerPositions[players[(myIndex + 1) % numPlayers].id] = 'player2'; // 左边
-        playerPositions[players[(myIndex + 2) % numPlayers].id] = 'player3'; // 顶部
-        // player4区域留空
-    } else if (numPlayers === 2) {
-        playerPositions[players[myIndex].id] = 'player1'; // 自己是player1
-        playerPositions[players[(myIndex + 1) % numPlayers].id] = 'player2'; // 左边
-        // player3和player4区域留空
-    }
-
-
-    // 清空所有玩家区域显示
-    Object.values(playerNames).forEach(el => el.textContent = '');
-    Object.values(playerHands).forEach(el => el.innerHTML = '');
-    Object.values(playerAreas).forEach(el => el.style.display = 'none'); // 先隐藏所有区域
-
-    // 根据玩家位置显示玩家信息和手牌数量
-    players.forEach(player => {
-        const position = playerPositions[player.id];
-        if (position) {
-            playerAreas[position].style.display = 'block'; // 显示对应区域
-            playerNames[position].textContent = player.username;
-            if (player.id !== myPlayerId) {
-                // 显示其他玩家手牌数量
-                playerHands[position].textContent = `手牌数: ${player.handSize}`; // 这里的handSize应该从服务器端获取
-            } else {
-                // 自己的手牌已经单独显示在下方了
-                playerHands[position].textContent = '';
-            }
-        }
-    });
-}
-
-// TODO: 可能需要根据实际游戏逻辑调整updatePlayerList和updatePlayerAreas函数的使用
-
-// 客户端错误处理 (可选)
-window.onerror = (message, source, lineno, colno, error) => {
-    console.error('客户端JS错误:', message, source, lineno, colno, error);
-    displayError(`客户端错误: ${message}`);
-};
-
-
-const socket = io();
-
-// DOM元素获取
-const usernameInput = document.getElementById('username');
-const connectButton = document.getElementById('connect-button');
-const usernameSection = document.getElementById('username-section');
-const gameSection = document.getElementById('game-section'); // 新增游戏界面容器
-const playerNameElement = document.getElementById('player-name');
-const cardsElement = document.getElementById('cards');
-const playArea = document.getElementById('play-area');
-const playButton = document.getElementById('play-button');
-const passButton = document.getElementById('pass-button');
-const gameStatusElement = document.getElementById('game-status');
-const errorMessageElement = document.getElementById('error-message'); // 获取错误信息显示区域
-
-const playerAreas = {
-    player1: document.getElementById('player-1-area'),
-    player2: document.getElementById('player-2-area'),
-    player3: document.getElementById('player-3-area'),
-    player4: document.getElementById('player-4-area'),
-};
-const playerNames = {
-    player1: document.getElementById('player-1-name'),
-    player2: document.getElementById('player-2-name'),
-    player3: document.getElementById('player-3-name'),
-    player4: document.getElementById('player-4-name'),
-};
-const playerHands = {
-    player1: document.getElementById('player-1-hand'),
-    player2: document.getElementById('player-2-hand'),
-    player3: document.getElementById('player-3-hand'),
-    player4: document.getElementById('player-4-hand'),
-};
-
-
-let playerList = []; // 存储玩家列表 (现在主要用于游戏中的玩家信息)
-let myPlayerId = null; // 存储当前玩家的ID
-let selectedCards = []; // 存储当前选中的牌
 
 // 连接成功
 socket.on('connect', () => {
@@ -342,51 +65,53 @@ socket.on('disconnect', (reason) => {
     // 根据断开连接的原因，可以进行重连尝试或其他处理
 });
 
-// 接收到玩家列表更新 (主要在游戏开始后接收，包含手牌数量等)
+// 接收到玩家列表更新 (现在主要用于大厅和游戏开始后的玩家信息)
 socket.on('player_list', (players) => {
     console.log('玩家列表更新:', players);
     playerList = players; // 更新玩家列表
     updatePlayerList(playerList); // 更新玩家列表显示
 });
 
-// 更新玩家准备状态
-socket.on('player_ready_status', (data) => {
-    console.log(\`玩家 ${data.playerId} 准备状态更新：${data.ready}\`);
-    // 更新玩家列表中的准备状态
-    const playerInfo = playerList.find(p => p.id === data.playerId);
-    if (playerInfo) {
-        playerInfo.ready = data.ready;
-        updatePlayerList(playerList); // 更新玩家列表显示
-    }
+// 加入房间成功
+socket.on('joined_room', (data) => {
+    console.log('成功加入房间:', data);
+    myPlayerId = data.playerId; // 存储自己的玩家ID
+    currentRoomId = data.roomId;
+
+    usernameSection.style.display = 'none'; // 隐藏用户名选择界面
+    roomSelection.style.display = 'none'; // Hide room selection
+    lobbyElement.style.display = 'block'; // 显示大厅界面
+    playerNameElement.textContent = `房间 ${data.roomId}`; // 在大厅显示房间号
+    // updatePlayerList(data.players); // 在大厅显示玩家列表 (optional based on UI)
 });
 
 // 游戏开始
 socket.on('game_started', (data) => {
     console.log('游戏开始:', data);
-    // 隐藏大厅界面，显示游戏界面
-    lobbyElement.style.display = 'none';
-    gameArea.style.display = 'block';
-    gameStatusElement.textContent = '游戏进行中...';
-    displayCards(data.hand); // 显示玩家手牌
+    lobbyElement.style.display = 'none'; // 隐藏大厅界面
+    gameArea.style.display = 'grid'; // 显示游戏界面 (使用grid布局)
+    // Hand is received in 'your_hand' event
     updatePlayerAreas(data.players, myPlayerId); // 更新玩家区域显示
+    if (readyButton) readyButton.style.display = 'none'; // 隐藏准备按钮 if it exists
+    gameStatusElement.style.display = 'block'; // 显示回合指示器
 });
 
-// 更新手牌（更名为 your_hand 以与服务器端一致）
+// 更新手牌
 socket.on('your_hand', (hand) => {
     console.log('手牌更新:', hand);
     displayCards(hand); // 显示玩家手牌
 });
 
-// 更新手牌
 // 更新牌桌上的牌
-socket.on('update_play_area', (play) => {
-    console.log('牌桌上的牌更新:', play);
-    displayPlayArea(play); // 显示牌桌上的牌
-});
-// 更新牌桌上的牌
-socket.on('update_play_area', (play) => {
-    console.log('牌桌上的牌更新:', play);
-    displayPlayArea(play); // 显示牌桌上的牌
+socket.on('cards_played', (data) => {
+    console.log('牌桌上的牌更新:', data.play);
+    displayPlayArea(data.play); // 显示牌桌上的牌
+    // Update hand size for the player who played
+    const playedPlayer = playerList.find(p => p.id === data.playerId);
+    if (playedPlayer) {
+        playedPlayer.handSize = data.handSize;
+        updatePlayerAreas(playerList, myPlayerId); // Update player areas to show new hand size
+    }
 });
 
 // 提示轮到谁出牌
@@ -398,10 +123,11 @@ socket.on('next_turn', (data) => {
         passButton.disabled = false; // 启用过牌按钮
     } else {
         const playerInfo = playerList.find(p => p.id === data.playerId);
+        let playerName = '未知玩家';
         if (playerInfo) {
-            const playerName = playerInfo.username; // 获取玩家的用户名
-            gameStatusElement.textContent = \`轮到 ${playerName} 出牌\`;
+            playerName = playerInfo.username; // 获取玩家的用户名
         }
+        gameStatusElement.textContent = `轮到 ${playerName} 出牌`;
         playButton.disabled = true; // 禁用出牌按钮
         passButton.disabled = true; // 禁用过牌按钮
     }
@@ -410,31 +136,226 @@ socket.on('next_turn', (data) => {
 // 游戏结束
 socket.on('game_over', (data) => {
     console.log('游戏结束:', data);
-    gameStatusElement.textContent = \`游戏结束！胜利者是：${data.winnerId}\`;
+    if (data.winnerId) {
+        const winner = playerList.find(p => p.id === data.winnerId);
+        const winnerName = winner ? winner.username : '未知玩家';
+        gameStatusElement.textContent = `游戏结束！胜利者是：${winnerName}`;
+    } else if (data.message) {
+        gameStatusElement.textContent = `游戏结束：${data.message}`;
+    } else {
+        gameStatusElement.textContent = '游戏结束！';
+    }
     // 可以添加其他游戏结束后的处理，例如显示结算信息等
+    // 游戏结束后可以显示重置游戏的按钮或者返回大厅
 });
 
 // 错误信息
 socket.on('game_error', (message) => {
- console.error('游戏错误:', message);
- displayError(`游戏发生错误: ${message}`); // 在UI上显示错误信息
+    console.error('游戏错误:', message);
+    displayError(`游戏发生错误: ${message}`); // 在UI上显示错误信息
 });
 
 // 通用错误处理
 socket.on('error', (message) => {
     console.error('服务器错误:', message);
     displayError(`服务器错误: ${message}`);
+});
 
+// 玩家准备状态更新
+socket.on('player_ready_status', (data) => {
+    console.log(`玩家 ${data.playerId} 准备状态更新：${data.ready}`);
+    // 更新玩家列表中的准备状态 (如果在大厅显示玩家列表的话)
+    const playerInfo = playerList.find(p => p.id === data.playerId);
+    if (playerInfo) {
+        playerInfo.ready = data.ready;
+        // updatePlayerList(playerList); // Update player list display in lobby
+    }
+});
+
+// 玩家离开房间
+socket.on('player_left', (data) => {
+    console.log(`玩家 ${data.id} 离开了房间`);
+    // Remove player from player list
+    playerList = playerList.filter(p => p.id !== data.id);
+    // Update player areas to reflect the departure
+    updatePlayerAreas(playerList, myPlayerId);
+    // Optionally update lobby player list if visible
+    // updatePlayerList(playerList);
+});
+
+// 游戏重置
+socket.on('game_reset', () => {
+    console.log('游戏已重置');
+    // Hide game area, show lobby/room selection
+    gameArea.style.display = 'none';
+    lobbyElement.style.display = 'block';
+    currentPlayArea.innerHTML = ''; // Clear the table
+    gameStatusElement.textContent = ''; // Clear status text
+    if (readyButton) readyButton.style.display = 'block'; // Show ready button if it exists
+    selectedCards = []; // Clear selected cards
+    // Player list will be updated by player_list event
+});
+
+// 一轮结束（清空桌面牌）
+socket.on('round_ended', () => {
+    console.log('一轮结束，清空桌面');
+    displayPlayArea([]); // Clear the displayed play area
+});
+
+// 玩家过牌
+socket.on('player_passed', (data) => {
+    console.log(`玩家 ${data.playerId} 过牌`);
+    // Optional: Display a message or indicator that the player passed
 });
 
 
-// 连接按钮点击事件
+// 显示错误信息到页面
+function displayError(message) {
+    errorMessageElement.textContent = message;
+    errorMessageElement.style.display = 'block';
+    // 错误信息显示一段时间后自动隐藏
+    setTimeout(() => {
+        errorMessageElement.style.display = 'none';
+    }, 5000); // 5秒后隐藏
+}
+
+
+// 更新玩家列表显示 (在大厅或游戏界面中使用，取决于UI设计)
+function updatePlayerList(players) {
+    // This function's implementation depends on where and how you want to display the player list.
+    // If you have a dedicated area for it, update its content here.
+    console.log("Updating player list display (implementation needed)");
+    // Example for a list in the lobby:
+    const listElement = document.getElementById('lobby-player-list');
+    if (listElement) {
+        listElement.innerHTML = ''; // Clear existing list
+        players.forEach(player => {
+            const li = document.createElement('li');
+            li.textContent = `${player.username} ${player.ready ? '(已准备)' : ''}`;
+            if (player.id === myPlayerId) {
+                li.style.fontWeight = 'bold'; // Mark self
+            }
+            listElement.appendChild(li);
+        });
+    }
+}
+
+// 检查图片是否存在，如果不存在则显示文字
+function checkImage(cardElement, card) {
+    const img = new Image();
+    img.onload = function() {
+        // Image exists, set background image
+        cardElement.style.backgroundImage = `url('images/${card.rank}_of_${card.suit.toLowerCase()}.png')`;
+    };
+    img.onerror = function() {
+        // 图片不存在，显示文字
+        cardElement.style.backgroundImage = 'none';
+        cardElement.classList.add('text-only'); // Add text-only class
+        cardElement.textContent = `${card.rank}${card.suit}`; // Display card text
+    };
+    // Trigger image loading
+    img.src = `images/${card.rank}_of_${card.suit.toLowerCase()}.png`;
+}
+
+// 显示玩家手牌
+function displayCards(hand) {
+    cardsElement.innerHTML = ''; // 清空现有手牌显示
+    hand.forEach(card => {
+        const cardElement = document.createElement('div');
+        cardElement.classList.add('card');
+        cardElement.dataset.card = `${card.rank}${card.suit}`; // 存储牌的信息
+
+        // Use checkImage to handle potential missing images
+        checkImage(cardElement, card);
+
+        cardElement.addEventListener('click', () => {
+            // Toggle card selection
+            const isSelected = selectedCards.some(c => c.rank === card.rank && c.suit === card.suit);
+            if (isSelected) {
+                selectedCards = selectedCards.filter(c => !(c.rank === card.rank && c.suit === card.suit));
+                cardElement.classList.remove('selected');
+            } else {
+                selectedCards.push(card);
+                cardElement.classList.add('selected');
+            }
+            console.log('当前选中牌:', selectedCards);
+        });
+        cardsElement.appendChild(cardElement);
+    });
+}
+
+// 显示牌桌上的牌
+function displayPlayArea(play) {
+    currentPlayArea.innerHTML = ''; // 清空现有牌桌显示
+    if (play && play.length > 0) {
+        play.forEach(card => {
+            const cardElement = document.createElement('div');
+            cardElement.classList.add('card', 'played'); // Add played class
+
+            // Use checkImage to handle potential missing images
+            checkImage(cardElement, card);
+
+            currentPlayArea.appendChild(cardElement);
+        });
+    } else {
+        currentPlayArea.textContent = '牌桌上没有牌';
+    }
+}
+
+// 更新玩家区域显示
+function updatePlayerAreas(players, myPlayerId) {
+    // Define potential positions based on the number of players
+    const positions = ['player1', 'player2', 'player3', 'player4'];
+    const numPlayers = players.length;
+    const myIndex = players.findIndex(p => p.id === myPlayerId);
+
+    // Clear previous player info and hide areas
+    positions.forEach(pos => {
+        if (playerNames[pos]) playerNames[pos].textContent = '';
+        if (playerHands[pos]) playerHands[pos].textContent = '';
+        if (playerAreas[pos]) playerAreas[pos].style.display = 'none';
+    });
+
+    if (myIndex === -1) {
+        console.error("Current player not found in player list");
+        return;
+    }
+
+    // Map player IDs to display positions based on current player's position
+    const playerDisplayMapping = {};
+    for (let i = 0; i < numPlayers; i++) {
+        const playerIndex = (myIndex + i) % numPlayers;
+        playerDisplayMapping[players[playerIndex].id] = positions[i];
+    }
+
+
+    // Display players based on the mapping
+    players.forEach(player => {
+        const displayPosition = playerDisplayMapping[player.id];
+        if (displayPosition && playerAreas[displayPosition]) {
+            playerAreas[displayPosition].style.display = 'block'; // Show the area
+            if (playerNames[displayPosition]) {
+                 playerNames[displayPosition].textContent = player.username;
+            }
+            if (player.id !== myPlayerId && playerHands[displayPosition]) {
+                // Display hand size for other players
+                playerHands[displayPosition].textContent = `手牌数: ${player.handSize}`;
+            } else if (playerHands[displayPosition]) {
+                 // Clear hand size for the current player (hand is displayed separately)
+                 playerHands[displayPosition].textContent = '';
+            }
+        }
+    });
+}
+
+
+// 连接按钮点击事件 (现在改为设置用户名并显示房间选择界面)
 connectButton.addEventListener('click', () => {
     const username = usernameInput.value.trim();
     if (username) {
         socket.emit('set_username', username);
-        // 连接成功后，隐藏用户名输入，显示房间选择
-        document.getElementById('username-section').style.display = 'none';
+        // 设置用户名后，隐藏用户名输入界面，显示房间选择界面
+        usernameSection.style.display = 'none';
         roomSelection.style.display = 'block';
     } else {
         alert('请输入用户名');
@@ -442,32 +363,43 @@ connectButton.addEventListener('click', () => {
 });
 
 // 创建房间按钮点击事件
-createRoomButton.addEventListener('click', () => {
-    socket.emit('create_room');
-});
+if (createRoomButton) { // Check if button exists
+    createRoomButton.addEventListener('click', () => {
+        socket.emit('create_room');
+    });
+}
 
-console.log("joinRoomButton",joinRoomButton)
+
 // 加入房间按钮点击事件
-joinRoomButton.addEventListener('click', () => {
-    const roomId = document.getElementById('join-room-input').value.trim();
-    if (roomId) {
-        socket.emit('join_room', roomId);
-    } else {
-        alert('请输入房间ID');
-        console.log("joinRoomButton clicked")
-    }
-});
+if (joinRoomButton) { // Check if button exists
+    joinRoomButton.addEventListener('click', () => {
+        const roomIdInput = document.getElementById('join-room-input');
+        const roomId = roomIdInput ? roomIdInput.value.trim() : '';
+        if (roomId) {
+            socket.emit('join_room', roomId);
+        } else {
+            alert('请输入房间ID');
+        }
+    });
+}
 
 // 准备按钮点击事件
-readyButton.addEventListener('click', () => {
-    socket.emit('player_ready');
-});
+if (readyButton) { // Check if button exists
+    readyButton.addEventListener('click', () => {
+        socket.emit('player_ready');
+    });
+}
+
 
 // 出牌按钮点击事件
 playButton.addEventListener('click', () => {
     if (selectedCards.length > 0) {
         socket.emit('play_cards', selectedCards);
         selectedCards = []; // 清空选中牌
+        // Deselect cards visually (optional but good UX)
+        document.querySelectorAll('.card.selected').forEach(cardEl => {
+            cardEl.classList.remove('selected');
+        });
     } else {
         alert('请选择要出的牌');
     }
@@ -477,123 +409,15 @@ playButton.addEventListener('click', () => {
 passButton.addEventListener('click', () => {
     socket.emit('pass_turn');
     selectedCards = []; // 清空选中牌
+     // Deselect cards visually (optional but good UX)
+     document.querySelectorAll('.card.selected').forEach(cardEl => {
+        cardEl.classList.remove('selected');
+    });
 });
 
-// 检查图片是否存在，如果不存在则显示文字
-function checkImage(cardElement, card) {
-    const img = new Image();
 
-    img.onerror = function() {
-        // 图片不存在，显示文字
-        cardElement.style.backgroundImage = 'none';
-        cardElement.classList.add('text-only'); // 添加 text-only 类
-        cardElement.textContent = `${card.rank}${card.suit}`; // 显示牌的文字
-    };
-    img.src = `images/${card.rank}_of_${card.suit.toLowerCase()}.png`;
-
-}
-// ---- 辅助函数 ----
-
-// 更新玩家列表显示
-function updatePlayerList(players) {
-    const listElement = document.getElementById('lobby-player-list');
-    listElement.innerHTML = ''; // 清空现有列表
-    players.forEach(player => {
-        const li = document.createElement('li');
-        li.textContent = \`${player.username} (\${player.ready ? '已准备' : '未准备'})\`;
-        if (player.id === myPlayerId) {
-            li.style.fontWeight = 'bold'; // 标记自己
-        }
-        listElement.appendChild(li);
-    });
-}
-
-// 显示玩家手牌
-function displayCards(hand) {
-    cardsElement.innerHTML = ''; // 清空现有手牌显示
-    hand.forEach(card => {
-        const cardElement = document.createElement('div');
-        cardElement.classList.add('card');
-        cardElement.dataset.card = \`${card.rank}${card.suit}\`; // 存储牌的信息
-        cardElement.style.backgroundImage = \`url('images/${card.rank}_of_${card.suit.toLowerCase()}.png')\`;
-        cardElement.addEventListener('click', () => {
-            // 选中/取消选中牌
-            if (selectedCards.some(c => c.rank === card.rank && c.suit === card.suit)) {
-                selectedCards = selectedCards.filter(c => !(c.rank === card.rank && c.suit === card.suit));
-                cardElement.classList.remove('selected');
-            } else {
-                selectedCards.push(card);
-                cardElement.classList.add('selected');
-            }
-            console.log('当前选中牌:', selectedCards);
-        });
-
-        checkImage(cardElement, card);
-
-        cardsElement.appendChild(cardElement);
-    });
-}
-
-// 显示牌桌上的牌
-function displayPlayArea(play) {
-    playArea.innerHTML = ''; // 清空现有牌桌显示
-    if (play && play.length > 0) {
-        play.forEach(card => {
-            const cardElement = document.createElement('div');
-            cardElement.classList.add('card', 'played'); // 添加 played 类
-            cardElement.style.backgroundImage = \`url('images/${card.rank}_of_${card.suit.toLowerCase()}.png')\`;
-
-            checkImage(cardElement, card);
-
-            playArea.appendChild(cardElement);
-        });
-    } else {
-        playArea.textContent = '牌桌上没有牌';
-    }
-}
-
-// 更新玩家区域显示
-function updatePlayerAreas(players, myPlayerId) {
-    // 根据玩家数量和自己的位置，确定其他玩家的位置
-    const playerPositions = {};
-    const myIndex = players.findIndex(p => p.id === myPlayerId);
-    const numPlayers = players.length;
-
-    if (numPlayers === 4) {
-        playerPositions[players[myIndex].id] = 'player1'; // 自己是player1
-        playerPositions[players[(myIndex + 1) % numPlayers].id] = 'player2';
-        playerPositions[players[(myIndex + 2) % numPlayers].id] = 'player3';
-        playerPositions[players[(myIndex + 3) % numPlayers].id] = 'player4';
-    } else if (numPlayers === 3) {
-        playerPositions[players[myIndex].id] = 'player1'; // 自己是player1
-        playerPositions[players[(myIndex + 1) % numPlayers].id] = 'player2';
-        playerPositions[players[(myIndex + 2) % numPlayers].id] = 'player3';
-        // player4区域留空
-    } else if (numPlayers === 2) {
-        playerPositions[players[myIndex].id] = 'player1'; // 自己是player1
-        playerPositions[players[(myIndex + 1) % numPlayers].id] = 'player2';
-        // player3和player4区域留空
-    }
-
-
-    // 清空所有玩家区域显示
-    Object.values(playerNames).forEach(el => el.textContent = '');
-    Object.values(playerHands).forEach(el => el.innerHTML = '');
-    Object.values(playerAreas).forEach(el => el.style.display = 'none'); // 先隐藏所有区域
-
-    // 根据玩家位置显示玩家信息和手牌数量
-    players.forEach(player => {
-        const position = playerPositions[player.id];
-        if (position) {
-            playerAreas[position].style.display = 'block'; // 显示对应区域
-            playerNames[position].textContent = player.username;
-            if (player.id !== myPlayerId) {
-                // 显示其他玩家手牌数量
-                playerHands[position].textContent = \`手牌数: ${player.handSize}\`;
-            } else {
-                // 自己的手牌已经单独显示在下方了
-                playerHands[position].textContent = '';
-            }
-        }
-    });
-}
+// 客户端错误处理 (可选)
+window.onerror = (message, source, lineno, colno, error) => {
+    console.error('客户端JS错误:', message, source, lineno, colno, error);
+    displayError(`客户端错误: ${message}`);
+};
