@@ -76,6 +76,7 @@ function createRoom(roomId) {
         playerOrder: [],
         state: 'waiting', // 'waiting', 'started', 'ended'
         ready: false,
+        readyPlayers: 0,
         lastPlay: null,
         lastPlayPlayerId: null,
         passedPlayers: 0,
@@ -163,7 +164,7 @@ io.on('connection', (socket) => {
         //Count suit
         const suitCounts = {};
         play.forEach(card => {
-           suitCounts[card.suit] = (suitCounts[card.suit] || 0) + 1;
+            suitCounts[card.suit] = (suitCounts[card.suit] || 0) + 1;
        });
 
         const uniqueSuits = Object.keys(suitCounts);
@@ -211,32 +212,32 @@ io.on('connection', (socket) => {
                 if (nextRankIndex !== currentRankIndex + 1) {
                     isStraight = false;
                     break;
-                }
+                } 
             }
             if (isStraight) return { type: 'straight', valid: true };
         }        
         if (len >= 5 && numUniqueRanks === len && numUniqueSuits === 1) {
             return { type: 'straightflush', valid: true };
-       }
+        }
 
         // TODO: Add other hand types (full house, flush, straight flush, etc.)
 
         return { type: 'unknown', valid: false };
     }
 
-    function comparePlays(play1, play2) {
+     function comparePlays(play1, play2) {
         const type1 = getPlayType(play1).type;
         const type2 = getPlayType(play2).type;
 
         //console.log("comparePlays:", type1, type2)
 
-        const typeOrder = ['single', 'pair', 'triple', 'straight', 'flush', 'fullhouse','bomb','straightflush'];
+        const typeOrder = ['single', 'pair', 'triple', 'straight', 'flush', 'fullhouse', 'bomb', 'straightflush'];
 
         const rank1 = play1[play1.length - 1].rank;
         const rank2 = play2[play2.length - 1].rank;
 
         const suit1 = play1[play1.length - 1].suit;
-        const suit2 = play2[play2.length - 1].suit;
+        const suit2 = play2[play2.length - 1].suit;  
 
         const rankCompare = rankOrder.indexOf(rank1) - rankOrder.indexOf(rank2);
         const suitCompare = suitOrder.indexOf(suit1) - suitOrder.indexOf(suit2);
@@ -244,9 +245,9 @@ io.on('connection', (socket) => {
         if(type1 == 'flush' && type2 == 'flush'){
             if(rankCompare == 0) return suitCompare > 0;
             return rankCompare > 0
-        }
+        }   
         if(type1 == 'fullhouse' && type2 == 'fullhouse'){
-            return rankCompare > 0
+           return rankCompare > 0
         }
         
         if (type1 === 'bomb' && type2 !== 'bomb') return true;
@@ -255,10 +256,13 @@ io.on('connection', (socket) => {
         if (type1 !== 'straightflush' && type2 === 'straightflush') return false;
 
         if (type1 === type2) {           
+            if (type1 === 'single' || type1 === 'pair' || type1 === 'triple' || type1 === 'bomb') {
+                return getCardValue(play1[play1.length - 1]) > getCardValue(play2[play2.length - 1]);
+            } else if (type1 === 'straight' || type1 == 'straightflush') {
+                return getCardValue(play1[play1.length - 1]) > getCardValue(play2[play2.length - 1]);
             }
             // TODO: Add other hand type comparisons
         }
-
         return false;
     }
 
@@ -333,10 +337,29 @@ io.on('connection', (socket) => {
 
     socket.emit('joined_room', { roomId: fixedRoomId, playerId: socket.id, username: room.players[socket.id].username });
 
-    if (Object.keys(room.players).length === 4 && !room.ready) {
-        room.ready = true;
-        initializeGame(fixedRoomId);
-    }
+
+
+      socket.on('player_ready', () => {
+        if (!currentRoomId || !rooms[currentRoomId]) {
+            socket.emit('error', 'You are not in any room');
+            return;
+        }
+        const room = rooms[currentRoomId];
+    
+        // Update player's ready status
+        if (room.players[socket.id]) {
+            room.players[socket.id].ready = true;
+            room.readyPlayers++
+        }
+    
+        // Broadcast the player's ready status to all clients in the room
+        io.to(currentRoomId).emit('player_ready_status', { playerId: socket.id, ready: true });
+    
+        // Check if all players are ready and if so, initialize the game
+        if (room.readyPlayers === Object.keys(room.players).length && room.state === 'waiting') {
+             initializeGame(currentRoomId);
+        }
+    });
 
     socket.on('play_cards', (cards) => {
         if (!currentRoomId || !rooms[currentRoomId]) {
@@ -461,6 +484,11 @@ io.on('connection', (socket) => {
             let position = room.players[socket.id]?.position;
             if (room.players[socket.id]?.ready) {
                 room.readyPlayers--;
+                 room.players[socket.id].ready = false;
+                // Broadcast the player's ready status to all clients in the room
+                  io.to(currentRoomId).emit('player_ready_status', { playerId: socket.id, ready: false });
+               
+
             }
 
             room.playerOrder = room.playerOrder.filter(id => id !== socket.id);
