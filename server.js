@@ -521,7 +521,6 @@ io.on('connection', (socket) => {
                 console.log(`房间 ${currentRoomId} 已删除`);
            }  
             }
-                }
         }
  });
 
