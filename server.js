@@ -369,7 +369,9 @@ io.on('connection', (socket) => {
         const room = rooms[currentRoomId];
 
         if (socket.id !== room.currentPlayerId || room.state !== 'started') {
-            socket.emit('error', 'It is not your turn or the game has not started');
+            socket.emit('error', socket.id !== room.currentPlayerId ? 'Error: It is not your turn' : 'Error: Game has not started');
+
+
             return;
         }
 
@@ -391,12 +393,12 @@ io.on('connection', (socket) => {
         const playCheck = checkPlay(cards, room.currentPlay);
 
         if (!playCheck.valid) {
-            socket.emit('error', 'Invalid play');
+            socket.emit('error', 'Error: Invalid card combination');
             return;
         }
 
         if (room.currentPlay && room.currentPlay.length > 0 && !playCheck.stronger) {
-            socket.emit('error', 'Your play is not strong enough');
+            socket.emit('error', 'Error: Your play is not strong enough compared to the previous play');
             return;
         }
 
@@ -436,12 +438,12 @@ io.on('connection', (socket) => {
         const room = rooms[currentRoomId];
 
         if (socket.id !== room.currentPlayerId || room.state !== 'started') {
-            socket.emit('error', 'It is not your turn or the game has not started');
+            socket.emit('error', socket.id !== room.currentPlayerId ? 'Error: It is not your turn' : 'Error: Game has not started');
             return;
         }
 
         if (!room.currentPlay || room.currentPlay.length === 0) {
-            socket.emit('error', 'You are the first to play, you cannot pass');
+            socket.emit('error', 'Error: You cannot pass on the first play of a round');
             return;
         }
 
