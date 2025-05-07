@@ -519,7 +519,8 @@ io.on('connection', (socket) => {
            if (Object.keys(room.players).length === 0) {
                 delete rooms[currentRoomId];
                 console.log(`房间 ${currentRoomId} 已删除`);
-           }
+           }  
+            }
                 }
         }
  });
