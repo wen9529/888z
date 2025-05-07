@@ -657,7 +657,7 @@ io.on('connection', (socket) => {
                 delete rooms[currentRoomId];
                 console.log(`房间 ${currentRoomId} 已删除`);
            }
-
+          }
      }
  });
 
