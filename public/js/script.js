@@ -5,22 +5,26 @@ const socket = io();
 const usernameInput = document.getElementById('username');
 const connectButton = document.getElementById('connect-button');
 const usernameSection = document.getElementById('username-section');
-const roomSelection = document.getElementById('room-selection'); // 更改为 room-selection
+const roomSelection = document.getElementById('room-selection');
 const lobbyElement = document.getElementById('lobby'); // 获取大厅元素
 const joinRoomButton = document.getElementById('join-room-button'); // 获取加入房间按钮
 const readyButton = document.getElementById('ready-button'); // 获取准备按钮
-const gameContainer = document.getElementById('game-container'); // 更改为 game-container
-const playerNameElement = document.getElementById('player-name');
+const gameArea = document.getElementById('game-container'); // 更改为 game-container
+const playerNameElement = document.getElementById('current-room-display'); // Using this to display room info
 const playerListElement = document.getElementById('player-list');
 const cardsElement = document.getElementById('player-bottom').querySelector('.cards'); // 获取玩家自己的手牌区域
 const cardTable = document.getElementById('card-table'); // 更改为 card-table
 const playButton = document.getElementById('play-cards-button'); // 更改为 play-cards-button
 const passButton = document.getElementById('pass-turn-button'); // 更改为 pass-turn-button
-const gameStatusElement = document.getElementById('turn-indicator'); // 更改为 turn-indicator
+const gameStatusElement = document.getElementById('turn-indicator');
 const errorMessageElement = document.getElementById('error-message'); // 获取错误信息显示区域
+const currentPlayArea = document.getElementById('current-play').querySelector('.cards'); // 获取当前桌面上的牌区域
+
 let playerList = []; // 存储玩家列表
 let myPlayerId = null; // 存储当前玩家的ID
 let selectedCards = []; // 存储当前选中的牌
+let currentRoomId = null; // 存储当前房间ID
+
 
 // 连接成功
 socket.on('connect', () => {
@@ -40,29 +44,34 @@ socket.on('disconnect', (reason) => {
  // 根据断开连接的原因，可以进行重连尝试或其他处理
 });
 
-// 加入房间成功 (现在是自动加入固定房间1)
+// 接收到玩家列表更新 (现在主要用于大厅和游戏开始后的玩家信息)
+socket.on('player_list', (players) => {
+ console.log('玩家列表更新:', players);
+ playerList = players; // 更新玩家列表
+ updatePlayerList(playerList); // 更新玩家列表显示
+});
+
+// 加入房间成功
 socket.on('joined_room', (data) => {
  console.log('成功加入房间:', data);
  myPlayerId = data.playerId; // 存储自己的玩家ID
- playerNameElement.textContent = `你的名字: ${data.username}`; // 显示玩家名字
- // 不需要隐藏房间选择或显示大厅，直接等待游戏开始
+ currentRoomId = data.roomId;
+
+ roomSelection.style.display = 'none'; // 隐藏房间选择界面
+ lobbyElement.style.display = 'block'; // 显示大厅界面
+ playerNameElement.textContent = data.roomId; // 在大厅显示房间号
+ updatePlayerList(data.players); // 显示大厅玩家列表
 });
 
 // 游戏开始
 socket.on('game_started', (data) => {
  console.log('游戏开始:', data);
- // 隐藏用户名输入和房间选择界面，显示游戏界面
- usernameSection.style.display = 'none';
- gameSection.style.display = 'block'; // 显示游戏界面
- gameStatusElement.textContent = '游戏进行中...';
+ lobbyElement.style.display = 'none'; // 隐藏大厅界面
+ gameArea.style.display = 'grid'; // 显示游戏界面 (使用grid布局)
  displayCards(data.hand); // 显示玩家手牌
  updatePlayerAreas(data.players, myPlayerId); // 更新玩家区域显示
-});
-
-// 更新手牌
-socket.on('your_hand', (hand) => {
- console.log('手牌更新:', hand);
- displayCards(hand); // 显示玩家手牌
+ readyButton.style.display = 'none'; // 隐藏准备按钮
+ gameStatusElement.style.display = 'block'; // 显示回合指示器
 });
 
 // 更新牌桌上的牌
