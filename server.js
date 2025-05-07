@@ -643,7 +643,6 @@ io.on('connection', (socket) => {
  io.to(currentRoomId).emit('game_over', { winnerId: null, message: '玩家不足，游戏结束' });
                     }
               } else {
-              }
 
 
           // 如果断开连接导致房间玩家不足，且游戏已开始，结束游戏并重置房间
