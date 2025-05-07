@@ -514,7 +514,6 @@ io.on('connection', (socket) => {
                io.to(currentRoomId).emit('game_over', { winnerId: null, message: '玩家不足，游戏结束' });
                 resetGame(currentRoomId);
           }
-          }
 
           // 如果房间空了，删除房间
            if (Object.keys(room.players).length === 0) {
