@@ -33,20 +33,29 @@ h1 {
   margin-top: 10px;
 }
 
+/* 将游戏区域的背景设置为半透明 */
 #game-container {
   display: grid;
-  /* 上下左右布局，调整列宽和行高 */
-  grid-template-columns: 15% 1fr 15%; /* 加宽左右两侧玩家区域 */
-  grid-template-rows: 15% 1fr 15%; /* 加宽上下两侧玩家区域 */
-  gap: 5px; /* 缩小间距 */
-  width: 99%; /* 调整宽度 */
+  grid-template-columns: 10% 1fr 10%; /* 左、中、右三列 */
+  grid-template-rows: auto 1fr auto auto; /* 顶部、中间、出牌区、底部玩家区 */
+  grid-template-areas:
+    "player-left game-top player-right"
+    "player-left game-center player-right"
+    ". current-play ." /* 中间一行用于显示当前出的牌 */
+    "player-bottom player-bottom player-bottom"; /* 底部一行用于当前玩家手牌和控制 */
+  gap: 10px; /* 网格之间的间距 */
+  width: 100%; /* 或者您希望的游戏区域宽度 */
+  height: 100vh; /* 或者您希望的游戏区域高度 */
   max-width: 1200px;
-  margin: 10px auto; /* 缩小外边距 */
-  padding: 5px; /* 缩小内边距 */
+  margin: 0 auto;
+  padding: 10px;
   box-sizing: border-box;
-  border: 1px solid #ccc; /* 添加边框，更容易观察布局 */
+  background-color: rgba(255, 255, 255, 0.5); /* 半透明背景 */
 }
-
+#turn-indicator, #error-message {
+  align-self: end;
+  justify-self: center;
+}
 #game-title {
   grid-column: 1 / 4;
   grid-row: 1 / 2;
@@ -59,7 +68,7 @@ h1 {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start; /* 让内容靠顶部对齐 */
-  background-color: rgba(255, 255, 255, 0.5);
+  background-color: transparent;
   border: 1px solid #aaa; /* 添加边框 */
 }
 
@@ -67,46 +76,33 @@ h1 {
 #player-top {
     grid-column: 2 / 3; /* 顶部玩家占据中间列 */
     grid-row: 1 / 2; /* 顶部玩家占据第一行 */
-    justify-self: center; /* 水平居中 */
-    align-self: start;
-    width: 95%; /* 调整宽度 */
+    grid-area: game-top;
 }
 
 #player-left {
-    grid-column: 1 / 2; /* 左侧玩家占据第一列 */
-    grid-row: 2 / 3; /* 左侧玩家占据中间行 */
-    justify-self: center;
-    align-self: center; /* 垂直居中 */
-    height: 95%;
-    flex-direction: column-reverse;
+  grid-area: player-left;
 }
 
 #player-right {
-    grid-column: 3 / 4; /* 右侧玩家占据第三列 */
-    grid-row: 2 / 3; /* 右侧玩家占据中间行 */
-    justify-self: center;
-    align-self: center; /* 垂直居中 */
-    height: 95%;
-    flex-direction: column-reverse;
+  grid-area: player-right;
 }
 
 #player-bottom {
-    grid-column: 2 / 3;
-    grid-row: 3 / 4;
-    
-    align-self: end;
-    height: 95%;
-    
-    justify-self: center;
-    margin-top: 10px; /* 缩小上边距 */
-    width: 90%; /* 调整宽度 */
+  grid-area: player-bottom;
+}
+
+#card-table {
+    grid-area: game-center;
 }
 
 
+#current-play{
+  grid-area: current-play;
+}
+
 #card-table {
-    grid-column: 2 / 3;
-    grid-row: 3 / 4;
-    background-color: #8B4513;
+    background-color: transparent;
+    border: 1px solid #8B4513;
     border-radius: 50%;
     width: 250px; /* 缩小牌桌 */
     height: 120px; /* 缩小牌桌 */
@@ -146,25 +142,35 @@ h1 {
   font-size: 1em; /* 缩小字体 */
 }
 
-.cards {
+.player-area .cards {
   display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  min-height: 80px; /* 缩小卡牌容器高度 */
-  border: 1px dashed #ccc;
-  background-color: #fff;
+    position: relative; /* Required for overlapping */
+    left: 50%;
+    justify-content: flex-start; /* Start from left */
+    align-items: center; /* Vertical alignment */
+    white-space: nowrap;
+    width: 100%;
+    padding: 5px; /* Add padding */
+  min-height: 80px;
   border-radius: 5px;
   overflow: auto; /* 添加滚动条，避免内容溢出 */
 }
 
-.card {
-  background-size: cover;
-  background-position: center;
-  border-radius: 4px; /* 缩小圆角 */
-  box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3); /* 缩小阴影 */
-  cursor: pointer;
-  background-color: #fff;
-  transition: transform 0.1s ease;
+.player-area .cards .card {
+    background-size: cover;
+    background-position: center;
+    border-radius: 4px;
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    background-color: #fff;
+    transition: transform 0.1s ease;
+    position: relative;
+    margin-left: -25px;
+    margin-right: 0;
+}
+/* First card to have no negative left margin */
+.player-area .cards .card:first-child {
+    margin-left: 0;
 }
 
 .card.selected {
@@ -187,31 +193,21 @@ h1 {
 }
 
 #message-area {
-    grid-column: 1 / 4;
-    grid-row: 5 / 6;
-    margin-top: 10px; /* 缩小上边距 */
+    grid-area: error-message;
     text-align: center;
     color: red;
     font-weight: bold;
-    font-size: 0.9em; /* 缩小字体 */
 }
 
 #current-play {
-    grid-column: 2 / 3;
-    grid-row: 3 / 4;
-    align-self: center;
-    justify-self: center;
-    z-index: 0;
-    background-color: rgba(255, 255, 255, 0.7);
-    padding: 8px; /* 缩小内边距 */
-    border-radius: 8px;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-}
-
-#current-play .cards {
-    min-height: 60px; /* 缩小卡牌容器高度 */
+  align-self: center;
+  justify-self: center;
+  z-index: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  padding: 8px; /* 缩小内边距 */
+  border-radius: 8px;
+  flex-direction: column;
+  align-items: center;
 }
 
 #turn-indicator {

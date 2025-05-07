@@ -261,6 +261,25 @@ function checkImage(cardElement, card) {
 
 // 显示玩家手牌
 function displayCards(hand) {
+    // Sort hand by rank (3 to 2), then by suit (Clubs, Diamonds, Hearts, Spades)
+    const rankOrder = ['3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A', '2'];
+    const suitOrder = ['C', 'D', 'H', 'S'];
+    
+    hand.sort((a, b) => {
+        const rankA = rankOrder.indexOf(a.rank);
+        const rankB = rankOrder.indexOf(b.rank);
+        if (rankA !== rankB) {
+            return rankA - rankB;
+        }
+        const suitA = suitOrder.indexOf(a.suit);
+        const suitB = suitOrder.indexOf(b.suit);
+        return suitA - suitB;
+    });
+
+
+
+
+
      cardsElement.innerHTML = '';
     hand.forEach(card => {
         const cardElement = document.createElement('div');
@@ -275,10 +294,10 @@ function displayCards(hand) {
             const isSelected = selectedCards.some(c => c.rank === card.rank && c.suit === card.suit);
             if (isSelected) {
                 selectedCards = selectedCards.filter(c => !(c.rank === card.rank && c.suit === card.suit));
-                cardElement.classList.remove('selected');
+               cardElement.classList.remove('selected'); // Remove selected class
             } else {
                 selectedCards.push(card);
-                cardElement.classList.add('selected');
+                 cardElement.classList.add('selected'); // Add selected class
             }
             console.log('当前选中牌:', selectedCards);
         });
