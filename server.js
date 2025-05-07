@@ -212,7 +212,7 @@ io.on('connection', (socket) => {
                 if (nextRankIndex !== currentRankIndex + 1) {
                     isStraight = false;
                     break;
-                } 
+                }
             }
             if (isStraight) return { type: 'straight', valid: true };
         }        

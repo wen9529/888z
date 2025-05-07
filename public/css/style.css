@@ -36,10 +36,10 @@ h1 {
 #game-container {
   display: grid;
   /* 上下左右布局，调整列宽和行高 */
-  grid-template-columns: 0.5fr 2fr 0.5fr; /* 缩小左右两侧的空白 */
-  grid-template-rows: auto 1fr 1fr auto auto; /* 保持行高不变 */
+  grid-template-columns: 15% 1fr 15%; /* 加宽左右两侧玩家区域 */
+  grid-template-rows: 15% 1fr 15%; /* 加宽上下两侧玩家区域 */
   gap: 5px; /* 缩小间距 */
-  width: 98%;
+  width: 99%; /* 调整宽度 */
   max-width: 1200px;
   margin: 10px auto; /* 缩小外边距 */
   padding: 5px; /* 缩小内边距 */
@@ -65,35 +65,38 @@ h1 {
 
 /* 玩家布局 */
 #player-top {
-  grid-column: 2 / 3;
-  grid-row: 2 / 3;
-  align-self: start;
-  justify-self: center;
-  width: 80%; /* 调整宽度 */
+    grid-column: 2 / 3; /* 顶部玩家占据中间列 */
+    grid-row: 1 / 2; /* 顶部玩家占据第一行 */
+    justify-self: center; /* 水平居中 */
+    align-self: start;
+    width: 95%; /* 调整宽度 */
 }
 
 #player-left {
-  grid-column: 1 / 2;
-  grid-row: 3 / 4;
-  align-self: center;
-  justify-self: start;
-  height: 80%; /* 调整高度 */
-  flex-direction: column;
+    grid-column: 1 / 2; /* 左侧玩家占据第一列 */
+    grid-row: 2 / 3; /* 左侧玩家占据中间行 */
+    justify-self: center;
+    align-self: center; /* 垂直居中 */
+    height: 95%;
+    flex-direction: column-reverse;
 }
 
 #player-right {
-  grid-column: 3 / 4;
-  grid-row: 3 / 4;
-  align-self: center;
-  justify-self: end;
-  height: 80%; /* 调整高度 */
-  flex-direction: column;
+    grid-column: 3 / 4; /* 右侧玩家占据第三列 */
+    grid-row: 2 / 3; /* 右侧玩家占据中间行 */
+    justify-self: center;
+    align-self: center; /* 垂直居中 */
+    height: 95%;
+    flex-direction: column-reverse;
 }
 
 #player-bottom {
-    grid-column: 1 / 4;
-    grid-row: 4 / 5;
+    grid-column: 2 / 3;
+    grid-row: 3 / 4;
+    
     align-self: end;
+    height: 95%;
+    
     justify-self: center;
     margin-top: 10px; /* 缩小上边距 */
     width: 90%; /* 调整宽度 */

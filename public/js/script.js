@@ -358,7 +358,7 @@ connectButton.addEventListener('click', () => {
         roomSelection.style.display = 'block';
     } else {
         alert('请输入用户名');
-    });
+    }
 }
 
 
