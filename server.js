@@ -124,7 +124,9 @@ io.on('connection', (socket) => {
     let currentRoomId = null;
 
     socket.on('set_username', (username) => {
+        
         socket.username = username; // Store the username in the socket object
+    });
 
 
     socket.on('create_room', () => {
