@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const server = http.createServer(app);
@@ -62,6 +63,7 @@ function createPlayer(id, username) {
         id,
         hand: [], // Initialize with an empty hand
         username,
+        ready: false,
     };
 }
 
@@ -70,6 +72,7 @@ function createRoom(roomId) {
     return {
         id: roomId,
         players: {}, // { playerId: player }
+        maxPlayers: 4,
         deck: [],
         currentPlayerId: null,
         currentPlay: [],
@@ -225,11 +228,9 @@ io.on('connection', (socket) => {
         return { type: 'unknown', valid: false };
     }
 
-     function comparePlays(play1, play2) {
+    function comparePlays(play1, play2) {
         const type1 = getPlayType(play1).type;
         const type2 = getPlayType(play2).type;
-
-        //console.log("comparePlays:", type1, type2)
 
         const typeOrder = ['single', 'pair', 'triple', 'straight', 'flush', 'fullhouse', 'bomb', 'straightflush'];
 
@@ -237,11 +238,34 @@ io.on('connection', (socket) => {
         const rank2 = play2[play2.length - 1].rank;
 
         const suit1 = play1[play1.length - 1].suit;
-        const suit2 = play2[play2.length - 1].suit;  
+        const suit2 = play2[play2.length - 1].suit;
 
         const rankCompare = rankOrder.indexOf(rank1) - rankOrder.indexOf(rank2);
         const suitCompare = suitOrder.indexOf(suit1) - suitOrder.indexOf(suit2);
 
+        if (type1 == 'flush' && type2 == 'flush') {
+            if (rankCompare == 0) return suitCompare > 0;
+            return rankCompare > 0
+        }
+        if (type1 == 'fullhouse' && type2 == 'fullhouse') {
+            return rankCompare > 0
+        }
+
+        if (type1 === 'bomb' && type2 !== 'bomb') return true;
+        if (type1 !== 'bomb' && type2 === 'bomb') return false;
+        if (type1 === 'straightflush' && type2 !== 'straightflush') return true;
+        if (type1 !== 'straightflush' && type2 === 'straightflush') return false;
+
+        if (type1 === type2) {
+            if (type1 === 'single' || type1 === 'pair' || type1 === 'triple' || type1 === 'bomb') {
+                return getCardValue(play1[play1.length - 1]) > getCardValue(play2[play2.length - 1]);
+            } else if (type1 === 'straight' || type1 == 'straightflush') {
+                return getCardValue(play1[play1.length - 1]) > getCardValue(play2[play2.length - 1]);
+            }
+            // TODO: Add other hand type comparisons
+        }
+        return false;
+    }
         if(type1 == 'flush' && type2 == 'flush'){
             if(rankCompare == 0) return suitCompare > 0;
             return rankCompare > 0
@@ -303,34 +327,11 @@ io.on('connection', (socket) => {
     }
 
 
-    const fixedRoomId = '1';
-    let currentRoomId = fixedRoomId;
+    let currentRoomId = null;
 
-    if (!rooms[fixedRoomId]) {
-        rooms[fixedRoomId] = createRoom(fixedRoomId);
-    }
-
-    socket.join(fixedRoomId);
-    console.log(`User ${socket.id} joined room ${fixedRoomId}`);
-
-    const room = rooms[fixedRoomId];
-    const playerIdsInRoom = Object.keys(room.players);
-
-    if (playerIdsInRoom.length >= 4) {
-        socket.emit('error', 'Room is full');
-        return;
-    }
-
-    room.players[socket.id] = {
-        id: socket.id,
-        hand: [],
-        position: null,
-        username: `玩家${Object.keys(room.players).length + 1}`,
-    };
-
-    const availablePositions = ['bottom', 'left', 'top', 'right'].filter(pos => !Object.values(room.players).some(p => p.position === pos));
-    if (availablePositions.length > 0) {
-        room.players[socket.id].position = availablePositions[0];
+    socket.on('set_username', (username) => {
+        socket.username = username; // Store the username in the socket object
+    });
     }
 
     io.to(fixedRoomId).emit('player_list', Object.values(room.players).map(player => ({ id: player.id, username: player.username })));
@@ -338,6 +339,66 @@ io.on('connection', (socket) => {
     socket.emit('joined_room', { roomId: fixedRoomId, playerId: socket.id, username: room.players[socket.id].username });
 
 
+    socket.on('create_room', () => {
+        const roomId = uuidv4();
+        currentRoomId = roomId; // Assign the new roomId to currentRoomId
+        rooms[roomId] = createRoom(roomId);
+        rooms[roomId].players[socket.id] = createPlayer(socket.id, socket.username);
+        socket.join(roomId);
+        console.log(`User ${socket.id} created and joined room ${roomId}`);
+        //Assign position to player
+        const availablePositions = ['bottom', 'left', 'top', 'right'].filter(pos => !Object.values(rooms[roomId].players).some(p => p.position === pos));
+        if (availablePositions.length > 0) {
+            rooms[roomId].players[socket.id].position = availablePositions[0];
+        }
+        socket.emit('room_created', { roomId, playerId: socket.id });
+        io.to(roomId).emit('player_list', Object.values(rooms[roomId].players).map(player => ({ id: player.id, username: player.username })));
+    });
+
+    socket.on('join_room', (roomId) => {
+        currentRoomId = roomId; // Assign the provided roomId to currentRoomId
+
+        if (!rooms[roomId]) {
+            socket.emit('join_room_error', 'Room not found');
+            return;
+        }
+        if (Object.keys(rooms[roomId].players).length >= rooms[roomId].maxPlayers) {
+            socket.emit('join_room_error', 'Room is full');
+            return;
+        }
+
+        rooms[roomId].players[socket.id] = createPlayer(socket.id, socket.username);
+        socket.join(roomId);
+        console.log(`User ${socket.id} joined room ${roomId}`);
+        //Assign position to player
+        const availablePositions = ['bottom', 'left', 'top', 'right'].filter(pos => !Object.values(rooms[roomId].players).some(p => p.position === pos));
+        if (availablePositions.length > 0) {
+            rooms[roomId].players[socket.id].position = availablePositions[0];
+        }
+        io.to(roomId).emit('player_list', Object.values(rooms[roomId].players).map(player => ({ id: player.id, username: player.username })));
+
+
+        socket.emit('joined_room', {
+            roomId: roomId,
+            playerId: socket.id,
+            username: rooms[roomId].players[socket.id].username,
+            players: Object.values(rooms[roomId].players).map(player => ({
+                id: player.id,
+                username: player.username
+            }))
+        });
+        //Update player list
+        io.to(roomId).emit('player_list', Object.values(rooms[roomId].players).map(player => ({ id: player.id, username: player.username })));
+
+
+
+        //const availablePositions = ['bottom', 'left', 'top', 'right'].filter(pos => !Object.values(rooms[roomId].players).some(p => p.position === pos));
+        //if (availablePositions.length > 0) {
+        //    rooms[roomId].players[socket.id].position = availablePositions[0];
+        //}
+        //io.to(roomId).emit('player_list', Object.values(rooms[roomId].players).map(player => ({ id: player.id, username: player.username })));
+        //socket.emit('joined_room', { roomId, playerId: socket.id, username: rooms[roomId].players[socket.id].username });
+    });
 
       socket.on('player_ready', () => {
         if (!currentRoomId || !rooms[currentRoomId]) {
@@ -481,7 +542,7 @@ io.on('connection', (socket) => {
         console.log('User disconnected:', socket.id);
 
         if (currentRoomId && rooms[currentRoomId]) {
-            const room = rooms[currentRoomId];
+              const room = rooms[currentRoomId];
 
             let position = room.players[socket.id]?.position;
             if (room.players[socket.id]?.ready) {

@@ -1,21 +1,18 @@
-/* 新增的通用类 */
+/* Utility classes for common styling */
 .reduced-padding {
   padding: 3px;
 }
-
 .reduced-margin {
   margin: 2px;
 }
- 
 .small-card {
   width: 50px;
   height: 75px;
   border-radius: 4px;
 }
-
 .card-group {
->>>>>>> e829e9c (Add utility CSS classes for common styling)
 }
+
 /* 游戏 CSS 样式 */
 body {
   font-family: sans-serif;
@@ -26,12 +23,15 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
+  min-height: 100vh;  
+  background-color: #333; /* Darker background */
+  color: #eee; /* Light text color */
 }
 
 h1 {
-  margin-top: 10px;
+    margin-top: 10px;
 }
+
 
 /* 将游戏区域的背景设置为半透明 */
 #game-container {
@@ -48,26 +48,30 @@ h1 {
   height: 100vh; /* 或者您希望的游戏区域高度 */
   max-width: 1200px;
   margin: 0 auto;
-  padding: 10px;
+  padding: 20px;
   box-sizing: border-box;
-  background-color: rgba(255, 255, 255, 0.5); /* 半透明背景 */
+  background-color: rgba(0, 0, 0, 0.6); /* Darker, less transparent background */
+  border-radius: 10px; /* Rounded corners for the game area */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6); /* More pronounced shadow */
 }
+
 #turn-indicator, #error-message {
   align-self: end;
   justify-self: center;
 }
+
 #game-title {
   grid-column: 1 / 4;
   grid-row: 1 / 2;
   text-align: center;
 }
 
+/* Player areas */
 .player-area {
-  border-radius: 8px;
+  border-radius: 10px; /* More rounded corners */
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-start; /* 让内容靠顶部对齐 */
+  align-items: center;  
   background-color: transparent;
   border: 1px solid #aaa; /* 添加边框 */
 }
@@ -100,22 +104,25 @@ h1 {
   grid-area: current-play;
 }
 
+/* Card table area */
 #card-table {
-    background-color: transparent;
-    border: 1px solid #8B4513;
-    border-radius: 50%;
-    width: 250px; /* 缩小牌桌 */
-    height: 120px; /* 缩小牌桌 */
+    background-color: rgba(0, 0, 0, 0.3); /* Subtle background for the table */
+    border: 2px solid #8B4513;
+    border-radius: 50%; /* Circle shape */
+    width: 250px; 
+    height: 120px; 
     align-self: center;
     justify-self: center;
     position: relative;
     z-index: 1;
-    box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6); /* Clearer shadow */
 }
 
+/* Start game button */
 #start-game-button {
     grid-column: 2 / 3;
     grid-row: 3 / 4;
+    
     align-self: center;
     justify-self: center;
     z-index: 2;
@@ -124,12 +131,13 @@ h1 {
     cursor: pointer;
 }
 
+/* Player controls (Play/Pass) */
 #player-controls {
-    margin-top: 8px; /* 缩小上边距 */
+    margin-top: 10px;
 }
 
 #player-controls button {
-    padding: 6px 12px; /* 缩小按钮 */
+    padding: 8px 16px;
     margin: 0 3px; /* 缩小间距 */
     font-size: 0.9em;
     cursor: pointer;
@@ -137,36 +145,38 @@ h1 {
 
 
 .player-area h3 {
-  margin-top: 3px; /* 缩小上边距 */
-  margin-bottom: 3px; /* 缩小下边距 */
-  font-size: 1em; /* 缩小字体 */
+  margin-top: 5px;
+  margin-bottom: 5px;
+  font-size: 1.1em; /* Slightly larger font */
+  color: #eee;
 }
 
+/* Cards display */
 .player-area .cards {
   display: flex;
-    position: relative; /* Required for overlapping */
+    position: relative;
     left: 50%;
-    justify-content: flex-start; /* Start from left */
-    align-items: center; /* Vertical alignment */
+    justify-content: flex-start;
+    align-items: center;
     white-space: nowrap;
     width: 100%;
-    padding: 5px; /* Add padding */
-  min-height: 80px;
-  border-radius: 5px;
-  overflow: auto; /* 添加滚动条，避免内容溢出 */
+    padding: 8px;
+    min-height: 80px;    
+  overflow: auto; 
 }
 
+/* Individual card */
 .player-area .cards .card {
-    background-size: cover;
+    background-size: contain;
     background-position: center;
-    border-radius: 4px;
-    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    background-repeat: no-repeat;
+    border-radius: 5px; /* Rounded corners */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6); /* Clearer shadow */
     cursor: pointer;
-    background-color: #fff;
+    background-color: #f8f8f8; /* Light gray background */
     transition: transform 0.1s ease;
     position: relative;
-    margin-left: -25px;
-    margin-right: 0;
+    margin-left: -25px;    
 }
 /* First card to have no negative left margin */
 .player-area .cards .card:first-child {
@@ -174,50 +184,52 @@ h1 {
 }
 
 .card.selected {
-    transform: translateY(-8px); /* 缩小上移距离 */
-    border-color: blue;
+    transform: translateY(-10px); /* Increased lift */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.8); /* More pronounced shadow */
+    border: 2px solid #007bff; /* Blue border for selection */
 }
-
-
+/* Card back side */
 .card.back {
   background-image: url('/images/back.png');
 }
-
+/* Card pile */
 .card-pile {
     width: 60px; /* 缩小牌堆 */
     height: 90px; /* 缩小牌堆 */
     background-size: cover;
     background-position: center;
-    border-radius: 4px; /* 缩小圆角 */
-    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3); /* 缩小阴影 */
+    border-radius: 4px;    
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
-
+/* Error message */
 #message-area {
     grid-area: error-message;
     text-align: center;
-    color: red;
+    color: #ff4d4d; /* Brighter red */
     font-weight: bold;
+    padding: 5px;
+    border-radius: 5px;
 }
-
+/* Current play cards area */
 #current-play {
   align-self: center;
   justify-self: center;
   z-index: 0;
-  background-color: rgba(255, 255, 255, 0.7);
-  padding: 8px; /* 缩小内边距 */
-  border-radius: 8px;
-  flex-direction: column;
-  align-items: center;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
+    padding: 10px;    
+    border-radius: 10px;
+    flex-direction: column;
+    align-items: center;
 }
-
+/* Turn indicator */
 #turn-indicator {
     grid-column: 2 / 3;
-    grid-row: 2 / 3;
-    align-self: end;
+    grid-row: 1 / 2;
+    align-self: start;
     justify-self: center;
-    margin-bottom: 8px; /* 缩小下边距 */
+    margin-top: 10px;
     font-weight: bold;
-    font-size: 0.9em; /* 缩小字体 */
+    font-size: 1em;
     display: none;
 }
 
@@ -226,7 +238,7 @@ h1 {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 0.7em; /* 缩小字体 */
-    color: #333;
-    padding: 2px; /* 缩小内边距 */
+    font-size: 0.8em;
+    color: #eee;
+    padding: 3px;
     text-align: center;

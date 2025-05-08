@@ -1,13 +1,17 @@
 // 连接WebSocket服务器
 const socket = io();
 
+document.addEventListener('DOMContentLoaded', () => {
+
 // DOM元素引用
 const usernameInput = document.getElementById('username');
-const connectButton = document.getElementById('connect-button');
+
+
 const usernameSection = document.getElementById('username-section');
 const roomSelection = document.getElementById('room-selection');
 const lobbyElement = document.getElementById('lobby');
 const joinRoomButton = document.getElementById('join-room-button');
+const createRoomButton = document.getElementById('create-room-button');
 const readyButton = document.getElementById('ready-button');
 const gameArea = document.getElementById('game-container');
 const playerNameElement = document.getElementById('current-room-display');
@@ -19,6 +23,9 @@ const passButton = document.getElementById('pass-turn-button');
 const gameStatusElement = document.getElementById('turn-indicator'); // Changed to match index.html
 const errorMessageElement = document.getElementById('error-message');
 const currentPlayArea = document.querySelector('#current-play .cards');
+
+
+
 
 
 
@@ -48,6 +55,38 @@ let myPlayerId = null; // 存储当前玩家的ID
 let selectedCards = []; // 存储当前选中的牌
 let currentRoomId = null; // 存储当前房间ID
 
+//设置用户名和显示房间选择界面
+
+if(joinRoomButton){
+    joinRoomButton.addEventListener('click', () => {
+        const roomIdInput = document.getElementById('join-room-input');
+        const roomId = roomIdInput ? roomIdInput.value.trim() : '';
+        const username = usernameInput.value.trim();
+        if (username) {
+            socket.emit('set_username', username);
+            // 设置用户名后，隐藏用户名输入界面，显示房间选择界面
+            if (roomId) {
+                socket.emit('join_room', roomId);
+            } else {
+                alert('请输入房间ID');
+            }
+        } else {
+            alert('请输入用户名');
+        }
+    });
+    createRoomButton.addEventListener('click', () => {
+        const username = usernameInput.value.trim();
+        if (username) {
+             socket.emit('create_room');
+        } else {
+            alert('请输入用户名');
+        }
+    });
+}
+
+
+
+
 
 // 连接成功
 socket.on('connect', () => {
@@ -74,13 +113,36 @@ socket.on('player_list', (players) => {
     updatePlayerList(playerList); // 更新玩家列表显示
 });
 
+// 创建房间成功
+socket.on('room_created', (data) => {
+    console.log('创建房间成功:', data);
+    myPlayerId = data.playerId;
+    currentRoomId = data.roomId;
+
+    roomSelection.style.display = 'none';
+    lobbyElement.style.display = 'block';
+    playerNameElement.textContent = data.roomId;
+});
+
+// 加入房间失败
+socket.on('join_room_error', (data) => {
+    console.log('加入房间失败:', data);
+
+    if (data.message) {
+        displayError(data.message); // Display the error message
+    } else {
+        displayError("加入房间失败"); // Default error message if no specific message is provided
+});
+
 // 加入房间成功
 socket.on('joined_room', (data) => {
     console.log('成功加入房间:', data);
     myPlayerId = data.playerId; // 存储自己的玩家ID
     currentRoomId = data.roomId;
 
-    usernameSection.style.display = 'none'; // 隐藏用户名选择界面
+    if (usernameSection) {
+        usernameSection.style.display = 'none'; // 隐藏用户名选择界面
+    }
     roomSelection.style.display = 'none'; // Hide room selection
     lobbyElement.style.display = 'block'; // 显示大厅界面
     playerNameElement.textContent = data.roomId; // 在大厅显示房间号
@@ -253,10 +315,10 @@ function checkImage(cardElement, card) {
     };
     img.onload = function() {
         // Image exists, set background image
-        cardElement.style.backgroundImage = `url('images/${card.rank}_of_${card.suit.toLowerCase()}.png')`;
+        cardElement.style.backgroundImage = `url('images/${card.rank}_of_${card.suit}.png')`;
     };
     // Trigger image loading
-    img.src = `images/${card.rank}_of_${card.suit.toLowerCase()}.png`;
+    img.src = `images/${card.rank}_of_${card.suit}.png`;
 }
 
 // 显示玩家手牌
@@ -367,32 +429,6 @@ function updatePlayerAreas(players, myPlayerId) {
 }
 
 
-// 连接按钮点击事件 (现在改为设置用户名并显示房间选择界面)
-connectButton.addEventListener('click', () => {
-    const username = usernameInput.value.trim();
-    if (username) {
-        socket.emit('set_username', username);
-        // 设置用户名后，隐藏用户名输入界面，显示房间选择界面
-        usernameSection.style.display = 'none';
-        roomSelection.style.display = 'block';
-    } else {
-        alert('请输入用户名');
-    }
-}
-
-
-// 加入房间按钮点击事件
-if (joinRoomButton) { // Check if button exists
-    joinRoomButton.addEventListener('click', () => {
-        const roomIdInput = document.getElementById('join-room-input');
-        const roomId = roomIdInput ? roomIdInput.value.trim() : '';
-        if (roomId) {
-            socket.emit('join_room', roomId);
-        } else {
-            alert('请输入房间ID');
-        }
-    });
-}
 
 // 准备按钮点击事件
 if (readyButton) { // Check if button exists
@@ -408,11 +444,10 @@ playButton.addEventListener('click', () => {
         socket.emit('play_cards', selectedCards);
         selectedCards = []; // 清空选中牌
         // Deselect cards visually (optional but good UX)
-        document.querySelectorAll('.card.selected').forEach(cardEl => {
-            cardEl.classList.remove('selected')});
+        document.querySelectorAll('.card.selected').forEach(cardEl => { cardEl.classList.remove('selected') });
     } else {
         alert('请选择要出的牌');
-    }
+    };
 });
 
 passButton.addEventListener('click', () => {
@@ -429,3 +464,5 @@ window.onerror = (message, source, lineno, colno, error) => {
     console.error('客户端JS错误:', message, source, lineno, colno, error);
     displayError(`客户端错误: ${message}`);
 };
+});
+
