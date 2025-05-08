@@ -132,7 +132,7 @@ socket.on('join_room_error', (data) => {
         displayError(data.message); // Display the error message
     } else {
         displayError("加入房间失败"); // Default error message if no specific message is provided
-});
+    }
 
 // 加入房间成功
 socket.on('joined_room', (data) => {
