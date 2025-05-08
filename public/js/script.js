@@ -12,7 +12,8 @@ const roomSelection = document.getElementById('room-selection');
 const lobbyElement = document.getElementById('lobby');
 const joinRoomButton = document.getElementById('join-room-button');
 const createRoomButton = document.getElementById('create-room-button');
-const readyButton = document.getElementById('ready-button');
+// const readyButton = document.getElementById('ready-button'); // Removed ready button
+const readyButton = document.getElementById('ready-button'); 
 const gameArea = document.getElementById('game-container');
 const playerNameElement = document.getElementById('current-room-display');
 const playerListElement = document.getElementById('player-list'); // player-list
@@ -169,7 +170,7 @@ socket.on('game_started', (data) => {
     // Hand is received in 'your_hand' event
     updatePlayerAreas(data.players, myPlayerId); // 更新玩家区域显示
     document.getElementById('game-status-message').textContent = '游戏开始！';
-    if (readyButton) readyButton.style.display = 'none'; // 隐藏准备按钮 if it exists
+    // if (readyButton) readyButton.style.display = 'none'; // 隐藏准备按钮 if it exists //remove ready button
     gameStatusElement.style.display = 'block'; // 显示回合指示器
 });
 
@@ -299,7 +300,7 @@ socket.on('game_reset', () => {
     lobbyElement.style.display = 'block';
     currentPlayArea.innerHTML = ''; // Clear the table
     gameStatusElement.textContent = ''; // Clear status text
-      document.getElementById('game-status-message').textContent = '游戏已重置，等待开始！';
+    document.getElementById('game-status-message').textContent = '游戏已重置，等待开始！';
     if (readyButton) readyButton.style.display = 'block'; // Show ready button if it exists
     selectedCards = []; // Clear selected cards
     // Player list will be updated by player_list event
@@ -486,12 +487,12 @@ function updatePlayerAreas(players, myPlayerId) {
 // 准备按钮点击事件
 if (readyButton) { // Check if button exists
     readyButton.addEventListener('click', () => {
-        socket.emit('player_ready');
+     //   socket.emit('player_ready');
     });
-}
+}//remove ready button
 
 
-// 出牌按钮点击事件
+ // 出牌按钮点击事件
 playButton.addEventListener('click', () => {
     if (selectedCards.length > 0) {
         socket.emit('play_cards', selectedCards);

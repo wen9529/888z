@@ -167,12 +167,20 @@ io.on('connection', (socket) => {
         }
         io.to(roomId).emit('player_list', Object.values(rooms[roomId].players).map(player => ({ id: player.id, username: player.username })));
 
+         // Set the new player to ready and increment the ready player count
+        rooms[roomId].players[socket.id].ready = true;
+        rooms[roomId].readyPlayers++;
+
+        // Check if the room is full and all players are ready
+        if (rooms[roomId].readyPlayers === Object.keys(rooms[roomId].players).length && Object.keys(rooms[roomId].players).length === rooms[roomId].maxPlayers && rooms[roomId].state === 'waiting') {
+            initializeGame(roomId);
+        }
 
         socket.emit('joined_room', {
             roomId: roomId,
             playerId: socket.id,
             username: rooms[roomId].players[socket.id].username,
-        });
+         });
 
 
         //const availablePositions = ['bottom', 'left', 'top', 'right'].filter(pos => !Object.values(rooms[roomId].players).some(p => p.position === pos));
