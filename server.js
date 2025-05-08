@@ -2,6 +2,10 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const { v4: uuidv4 } = require('uuid');
+const { createCard, initializeDeck, shuffleDeck, dealCards, getCardValue, getPlayType, comparePlays, checkPlay } = require('./gameLogic.js');
+
+
+
 
 const app = express();
 const server = http.createServer(app);
@@ -13,57 +17,17 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/public/index.html');
 });
 
-// Constants for card suits and ranks
-const SUITS = ['C', 'D', 'H', 'S']; // Clubs, Diamonds, Hearts, Spades
-const RANKS = ['3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A', '2'];
-
-// Function to create a card object
-function createCard(rank, suit) {
-    return { rank, suit };
-}
-
-// Function to initialize a deck of cards
-function initializeDeck() {
-    const deck = [];
-    for (const suit of SUITS) {
-        for (const rank of RANKS) {
-            deck.push(createCard(rank, suit));
-        }
-    }
-    return deck;
-}
-
-// Function to shuffle the deck using Fisher-Yates algorithm
-function shuffleDeck(deck) {
-    for (let i = deck.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [deck[i], deck[j]] = [deck[j], deck[i]];
-    }
-    return deck;
-}
-
-// Function to deal cards to players
-function dealCards(deck, numPlayers = 4) {
-    const hands = [];
-    for (let i = 0; i < numPlayers; i++) {
-        hands[i] = [];
-    }
-    for (let i = 0; i < deck.length; i++) {
-        hands[i % numPlayers].push(deck[i]);
-    }
-    return hands;
-}
 
 // 房间管理
 const rooms = {};
 
-// Function to create a player object
 function createPlayer(id, username) {
     return {
         id,
         hand: [], // Initialize with an empty hand
         username,
         ready: false,
+        playerState: 'waiting' // 'waiting', 'playing', 'passed', 'winner'
     };
 }
 
@@ -75,9 +39,10 @@ function createRoom(roomId) {
         maxPlayers: 4,
         deck: [],
         currentPlayerId: null,
+        roundState: 'new_round',
         currentPlay: [],
         playerOrder: [],
-        state: 'waiting', // 'waiting', 'started', 'ended'
+        state: 'waiting', // 'waiting', 'ready_check', 'dealing', 'playing_round', 'round_ended', 'game_over'
         ready: false,
         readyPlayers: 0,
         lastPlay: null,
@@ -130,12 +95,19 @@ function initializeGame(roomId) {
     room.currentPlayerId = startPlayerId;
     room.playerOrder = Object.keys(room.players);
     const startIndex = room.playerOrder.indexOf(startPlayerId);
-    room.playerOrder = room.playerOrder.slice(startIndex).concat(room.playerOrder.slice(0, startIndex));
+    room.playerOrder = room.playerOrder.slice(startIndex).concat(room.playerOrder.slice(0, startIndex))
 
     room.state = 'started';
 
     Object.keys(room.players).forEach((playerId) => {
         io.to(playerId).emit('your_hand', room.players[playerId].hand);
+    });
+    
+    room.lastPlay = null;
+
+    room.state = 'playing_round';
+    Object.keys(room.players).forEach((playerId) => {
+        room.players[playerId].status = 'playing';
     });
 
     io.to(roomId).emit('game_started', {
@@ -147,172 +119,7 @@ function initializeGame(roomId) {
 
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
-
-    const rankOrder = ['3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A', '2'];
-    const suitOrder = ['C', 'D', 'H', 'S'];
-
-    function getCardValue(card) {
-        return rankOrder.indexOf(card.rank) * 4 + suitOrder.indexOf(card.suit);
-    }
-
-    function getPlayType(play) {
-        const len = play.length;
-        if (len === 0) return { type: 'none', valid: false };
-
-        //Count ranks
-        const rankCounts = {};
-        play.forEach(card => {
-            rankCounts[card.rank] = (rankCounts[card.rank] || 0) + 1;
-        });
-        //Count suit
-        const suitCounts = {};
-        play.forEach(card => {
-            suitCounts[card.suit] = (suitCounts[card.suit] || 0) + 1;
-       });
-
-        const uniqueSuits = Object.keys(suitCounts);
-        const numUniqueSuits = uniqueSuits.length;
-
-
-        const uniqueRanks = Object.keys(rankCounts);
-        const numUniqueRanks = uniqueRanks.length;
-
-        play.sort((a, b) => getCardValue(a) - getCardValue(b));
-
-        if (len === 1) {
-            return { type: 'single', valid: true };
-        }
-
-        if (len === 2 && numUniqueRanks === 1) {
-            return { type: 'pair', valid: true };
-        }
-
-        if (len === 3 && numUniqueRanks === 1) {
-            return { type: 'triple', valid: true };
-        }
-
-        if (len === 4 && numUniqueRanks === 1) {
-            return { type: 'bomb', valid: true };
-        }
-
-        //Full House
-        if (len === 5 && numUniqueRanks === 2 && (Object.values(rankCounts).includes(3) && Object.values(rankCounts).includes(2))) {
-            return { type: 'fullhouse', valid: true };
-        }
-        //Flush
-        if (len >= 5 && numUniqueSuits === 1) {
-            return { type: 'flush', valid: true };
-        }
-
-
-
-
-        if (len >= 5 && numUniqueRanks === len) {
-            let isStraight = true;
-            for (let i = 0; i < len - 1; i++) {
-                const currentRankIndex = rankOrder.indexOf(play[i].rank);
-                const nextRankIndex = rankOrder.indexOf(play[i + 1].rank);
-                if (nextRankIndex !== currentRankIndex + 1) {
-                    isStraight = false;
-                    break;
-                }
-            }
-            if (isStraight) return { type: 'straight', valid: true };
-        }        
-        if (len >= 5 && numUniqueRanks === len && numUniqueSuits === 1) {
-            return { type: 'straightflush', valid: true };
-        }
-
-        // TODO: Add other hand types (full house, flush, straight flush, etc.)
-
-        return { type: 'unknown', valid: false };
-    }
-
-    function comparePlays(play1, play2) {
-        const type1 = getPlayType(play1).type;
-        const type2 = getPlayType(play2).type;
-
-        const typeOrder = ['single', 'pair', 'triple', 'straight', 'flush', 'fullhouse', 'bomb', 'straightflush'];
-
-        const rank1 = play1[play1.length - 1].rank;
-        const rank2 = play2[play2.length - 1].rank;
-
-        const suit1 = play1[play1.length - 1].suit;
-        const suit2 = play2[play2.length - 1].suit;
-
-        const rankCompare = rankOrder.indexOf(rank1) - rankOrder.indexOf(rank2);
-        const suitCompare = suitOrder.indexOf(suit1) - suitOrder.indexOf(suit2);
-
-        if (type1 == 'flush' && type2 == 'flush') {
-            if (rankCompare == 0) return suitCompare > 0;
-            return rankCompare > 0
-        }
-        if (type1 == 'fullhouse' && type2 == 'fullhouse') {
-            return rankCompare > 0
-        }
-
-        if (type1 === 'bomb' && type2 !== 'bomb') return true;
-        if (type1 !== 'bomb' && type2 === 'bomb') return false;
-        if (type1 === 'straightflush' && type2 !== 'straightflush') return true;
-        if (type1 !== 'straightflush' && type2 === 'straightflush') return false;
-
-        if (type1 === type2) {
-            if (type1 === 'single' || type1 === 'pair' || type1 === 'triple' || type1 === 'bomb') {
-                return getCardValue(play1[play1.length - 1]) > getCardValue(play2[play2.length - 1]);
-            } else if (type1 === 'straight' || type1 == 'straightflush') {
-                return getCardValue(play1[play1.length - 1]) > getCardValue(play2[play2.length - 1]);
-            }
-            // TODO: Add other hand type comparisons
-        }
-        return false;
-
-        if (type1 === type2) {           
-            if (type1 === 'single' || type1 === 'pair' || type1 === 'triple' || type1 === 'bomb') {
-                return getCardValue(play1[play1.length - 1]) > getCardValue(play2[play2.length - 1]);
-            } else if (type1 === 'straight' || type1 == 'straightflush') {
-                return getCardValue(play1[play1.length - 1]) > getCardValue(play2[play2.length - 1]);
-            }
-            // TODO: Add other hand type comparisons
-        }
-        return false;
-    }
-
-
-    function checkPlay(play, lastPlay) {
-        const currentPlayTypeInfo = getPlayType(play);
-
-        if (!currentPlayTypeInfo.valid) {
-            return { valid: false, stronger: false, type: 'unknown' };
-        }
-
-        if (!lastPlay || lastPlay.length === 0) {
-            return { valid: true, stronger: true, type: currentPlayTypeInfo.type };
-        }
-
-        const lastPlayTypeInfo = getPlayType(lastPlay);
-
-        if (currentPlayTypeInfo.type === 'bomb') {
-            if (lastPlayTypeInfo.type !== 'bomb') {
-                return { valid: true, stronger: true, type: 'bomb' };
-            } else {
-                return { valid: true, stronger: comparePlays(play, lastPlay), type: 'bomb' };
-            }
-        }
-
-        if (lastPlayTypeInfo.type === 'bomb') {
-            return { valid: false, stronger: false, type: currentPlayTypeInfo.type };
-        }
-
-        if (currentPlayTypeInfo.type === lastPlayTypeInfo.type) {
-             if (currentPlayTypeInfo.type !== 'bomb' && currentPlayTypeInfo.type !== 'straight' && play.length !== lastPlay.length) {
-                  return { valid: false, stronger: false, type: currentPlayTypeInfo.type };
-             }
-            return { valid: true, stronger: comparePlays(play, lastPlay), type: currentPlayTypeInfo.type };
-        }
-
-        return { valid: false, stronger: false, type: currentPlayTypeInfo.type };
-    }
-
+   
 
     let currentRoomId = null;
 
@@ -380,7 +187,7 @@ io.on('connection', (socket) => {
             return;
         }
         const room = rooms[currentRoomId];
-    
+
         // Update player's ready status
         if (room.players[socket.id]) {
             room.players[socket.id].ready = true;
@@ -397,21 +204,26 @@ io.on('connection', (socket) => {
     });
 
     socket.on('play_cards', (cards) => {
-        if (!currentRoomId || !rooms[currentRoomId]) {
-            socket.emit('error', 'You are not in any room');
-            return;
-        }
+         if (!currentRoomId || !rooms[currentRoomId]) {
+             socket.emit('error', 'You are not in any room');
+             return;
+         }
         const room = rooms[currentRoomId];
 
-        if (socket.id !== room.currentPlayerId || room.state !== 'started') {
-            socket.emit('error', socket.id !== room.currentPlayerId ? 'Error: It is not your turn' : 'Error: Game has not started');
-
-
-            return;
+        // Check if the room is in a state where playing is allowed
+        if (room.state !== 'started' && room.state !== 'playing_round') {
+             socket.emit('game_error', 'Error: Game has not started or has already ended');
+             return;
         }
+         // Check if it's the player's turn
+         if (socket.id !== room.currentPlayerId) {
+             socket.emit('game_error', 'Error: It is not your turn');
+             return;
+         }
+
 
         if (!Array.isArray(cards) || cards.length === 0) {
-            socket.emit('error', 'Please select cards to play');
+            socket.emit('game_error', 'Please select cards to play');
             return;
         }
 
@@ -421,12 +233,12 @@ io.on('connection', (socket) => {
         );
 
         if (!validPlayInHand) {
-            socket.emit('error', 'You do not have these cards');
+            socket.emit('game_error', 'You do not have these cards');
             return;
         }
 
         const playCheck = checkPlay(cards, room.currentPlay);
-
+       
         if (!playCheck.valid) {
             socket.emit('error', 'Error: Invalid card combination');
             return;
@@ -435,32 +247,49 @@ io.on('connection', (socket) => {
         if (room.currentPlay && room.currentPlay.length > 0 && !playCheck.stronger) {
             socket.emit('error', 'Error: Your play is not strong enough compared to the previous play');
             return;
-        }
+         }
 
+        
+        
         for (const card of cards) {
             const index = room.players[socket.id].hand.findIndex(hCard => hCard.rank === card.rank && hCard.suit === card.suit);
             if (index !== -1) {
                 room.players[socket.id].hand.splice(index, 1);
             }
         }
-
+        
         room.currentPlay = cards;
         room.lastPlay = cards;
         room.lastPlayPlayerId = socket.id;
         room.passedPlayers = 0;
-
+        
         io.to(currentRoomId).emit('cards_played', { playerId: socket.id, play: cards, handSize: room.players[socket.id].hand.length });
-
-        if (room.players[socket.id].hand.length === 0) {
-            io.to(currentRoomId).emit('game_over', { winnerId: socket.id });
-            room.state = 'game_over';
-            // TODO: Scoring logic
-        } else {
+      
+        if (room.players[socket.id].hand.length === 0) { //If have no hand is winner
+            // The player has played all their cards, they are the winner
+            const playerScores = {};
+             for (const playerId in room.players) {
+                   playerScores[playerId] = room.players[playerId].hand.length;
+             }
+                 io.to(currentRoomId).emit('game_over', {
+                     winnerId: socket.id,
+                    playerScores: playerScores, // Include player scores
+                 });
+            room.players[socket.id].state = 'winner';
+            io.to(currentRoomId).emit('game_over', { winnerId: socket.id});
+            console.log(`Room ${currentRoomId} Game over, winner is ${socket.id}`);
+            room.state = 'game_over';       
+         }else {
             const currentIndex = room.playerOrder.indexOf(room.currentPlayerId);
             room.currentPlayerId = room.playerOrder[(currentIndex + 1) % room.playerOrder.length];
+
             io.to(currentRoomId).emit('next_turn', { playerId: room.currentPlayerId });
         }
     });
+
+
+        
+    
 
     socket.on('request_reset', () => {
         if (!currentRoomId || !rooms[currentRoomId]) {
@@ -482,9 +311,12 @@ io.on('connection', (socket) => {
             return;
         }
 
+        
         io.to(currentRoomId).emit('player_passed', { playerId: socket.id });
 
         room.passedPlayers++;
+
+        room.players[socket.id].playerState = 'passed';
 
         const playersInRoomCount = Object.keys(room.players).length;
         if (room.passedPlayers === playersInRoomCount - 1) {
@@ -493,12 +325,10 @@ io.on('connection', (socket) => {
             room.lastPlay = null;
             room.lastPlayPlayerId = null;
             room.passedPlayers = 0;
-
-            if (room.lastPlayPlayerId) {
-                room.currentPlayerId = room.lastPlayPlayerId;
-                console.log(`Room ${currentRoomId} new round starts with last player ${room.currentPlayerId}`);
-            } else {
-                const currentIndex = room.playerOrder.indexOf(room.currentPlayerId);
+             Object.values(room.players).forEach((p)=>{p.playerState = 'playing'})
+             if (room.lastPlayPlayerId) {//下一轮从最后出牌的人开始
+                room.currentPlayerId = room.lastPlayPlayerId
+             const currentIndex = room.playerOrder.indexOf(room.currentPlayerId);
                 room.currentPlayerId = room.playerOrder[(currentIndex + 1) % room.playerOrder.length];
             }
 
@@ -525,7 +355,6 @@ io.on('connection', (socket) => {
                 // Broadcast the player's ready status to all clients in the room
                   io.to(currentRoomId).emit('player_ready_status', { playerId: socket.id, ready: false });
                
-
             }
 
             room.playerOrder = room.playerOrder.filter(id => id !== socket.id);

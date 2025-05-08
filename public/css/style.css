@@ -34,65 +34,100 @@ h1 {
 
 
 /* 将游戏区域的背景设置为半透明 */
-#game-container {
-  display: grid;
-  grid-template-columns: 10% 1fr 10%; /* 左、中、右三列 */
-  grid-template-rows: auto 1fr auto auto; /* 顶部、中间、出牌区、底部玩家区 */
-  grid-template-areas:
-    "player-left game-top player-right"
-    "player-left game-center player-right"
-    ". current-play ." /* 中间一行用于显示当前出的牌 */
-    "player-bottom player-bottom player-bottom"; /* 底部一行用于当前玩家手牌和控制 */
-  gap: 10px; /* 网格之间的间距 */
-  width: 100%; /* 或者您希望的游戏区域宽度 */
-  height: 100vh; /* 或者您希望的游戏区域高度 */
-  max-width: 1200px;
-  margin: 0 auto;
+#game-container {  
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  max-width: 100%;
+  margin: 0;
   padding: 20px;
   box-sizing: border-box;
   background-color: rgba(0, 0, 0, 0.6); /* Darker, less transparent background */
-  border-radius: 10px; /* Rounded corners for the game area */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6); /* More pronounced shadow */
+  border-radius: 0; /* Remove rounded corners for full-screen */
+  box-shadow: none; /* Remove shadow for full-screen */
+  display: grid;
+  grid-template-columns: 1fr 4fr 1fr;
+  grid-template-rows: 1fr 4fr 1fr;
+  grid-template-areas:
+    "player-top player-top player-top"
+    "player-left game-center player-right"
+    "player-bottom player-bottom player-bottom";
+  gap: 10px;
 }
 
 #turn-indicator, #error-message {
-  align-self: end;
-  justify-self: center;
+  position: absolute; /* Use absolute positioning */
+  left: 50%;
+  transform: translateX(-50%); /* Center horizontally */
+  z-index: 10;
 }
 
 #game-title {
-  grid-column: 1 / 4;
-  grid-row: 1 / 2;
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
   text-align: center;
 }
 
 /* Player areas */
 .player-area {
   border-radius: 10px; /* More rounded corners */
+  border: 1px solid #aaa; /* 添加边框 */
+  background-color: transparent;
   display: flex;
   flex-direction: column;
-  align-items: center;  
-  background-color: transparent;
-  border: 1px solid #aaa; /* 添加边框 */
+  align-items: center;
+  padding: 10px;
 }
-
+/*玩家区域*/
 /* 玩家布局 */
 #player-top {
-    grid-column: 2 / 3; /* 顶部玩家占据中间列 */
-    grid-row: 1 / 2; /* 顶部玩家占据第一行 */
-    grid-area: game-top;
+    grid-area: player-top;
+    justify-self: center;
+    width: 100%;
+    height: 100%;
 }
-
+#player-top .cards{
+    flex-direction: row;
+    justify-content: center;    
+}
 #player-left {
   grid-area: player-left;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
 }
-
+#player-left .cards{
+    flex-direction: column;
+}
 #player-right {
-  grid-area: player-right;
+    grid-area: player-right;
+    justify-self: end;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
 }
-
+#player-right .cards{
+    flex-direction: column;
+}
 #player-bottom {
-  grid-area: player-bottom;
+    grid-area: player-bottom;
+    justify-self: center;
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+#player-left, #player-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 #card-table {
@@ -102,7 +137,7 @@ h1 {
 
 #current-play{
   grid-area: current-play;
-}
+}   
 
 /* Card table area */
 #card-table {
@@ -119,14 +154,10 @@ h1 {
 }
 
 /* Start game button */
-#start-game-button {
-    grid-column: 2 / 3;
-    grid-row: 3 / 4;
-    
-    align-self: center;
-    justify-self: center;
-    z-index: 2;
-    padding: 8px 15px; /* 缩小按钮 */
+#start-game-button {  
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     font-size: 1em;
     cursor: pointer;
 }
@@ -143,7 +174,7 @@ h1 {
     cursor: pointer;
 }
 
-
+/* Player area text styling */
 .player-area h3 {
   margin-top: 5px;
   margin-bottom: 5px;
@@ -202,18 +233,13 @@ h1 {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 /* Error message */
-#message-area {
-    grid-area: error-message;
-    text-align: center;
-    color: #ff4d4d; /* Brighter red */
-    font-weight: bold;
-    padding: 5px;
-    border-radius: 5px;
+#error-message {  
+    color: #ff4d4d;
+    font-weight: bold;    
 }
 /* Current play cards area */
 #current-play {
-  align-self: center;
-  justify-self: center;
+
   z-index: 0;
     background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent background */
     padding: 10px;    
@@ -223,10 +249,7 @@ h1 {
 }
 /* Turn indicator */
 #turn-indicator {
-    grid-column: 2 / 3;
-    grid-row: 1 / 2;
-    align-self: start;
-    justify-self: center;
+
     margin-top: 10px;
     font-weight: bold;
     font-size: 1em;

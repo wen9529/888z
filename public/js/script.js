@@ -42,6 +42,11 @@ const playerNames = {
     player3: document.querySelector('#player-top h3'),
     player4: document.querySelector('#player-right h3'),
 };
+const playerHandSizes = {
+    player1: document.querySelector('#player-bottom .hand-size'),
+    player2: document.querySelector('#player-left .hand-size'),
+    player3: document.querySelector('#player-top .hand-size'),
+    player4: document.querySelector('#player-right .hand-size')
 const playerHands = {
     player1: document.querySelector('#player-bottom .cards'),
     player2: document.querySelector('#player-left .cards'),
@@ -156,6 +161,7 @@ socket.on('game_started', (data) => {
     gameArea.style.display = 'grid'; // 显示游戏界面 (使用grid布局)
     // Hand is received in 'your_hand' event
     updatePlayerAreas(data.players, myPlayerId); // 更新玩家区域显示
+    document.getElementById('game-status-message').textContent = '游戏开始！';
     if (readyButton) readyButton.style.display = 'none'; // 隐藏准备按钮 if it exists
     gameStatusElement.style.display = 'block'; // 显示回合指示器
 });
@@ -178,15 +184,17 @@ socket.on('cards_played', (data) => {
     }
 });
 
-// 提示轮到谁出牌
+// Update to indicate whose turn it is
 socket.on('next_turn', (data) => {
     console.log('轮到玩家', data.playerId, '出牌');
     if (data.playerId === myPlayerId) {
-        gameStatusElement.textContent = '轮到你出牌';
+        // Update turn indicator for yourself
+        gameStatusElement.textContent = 'Your turn to play';
         playButton.disabled = false; // 启用出牌按钮
         passButton.disabled = false; // 启用过牌按钮
     } else {
         const playerInfo = playerList.find(p => p.id === data.playerId);
+        // Update turn indicator for other players
         let playerName = '未知玩家';
         if (playerInfo) {
             playerName = playerInfo.username; // 获取玩家的用户名
@@ -195,6 +203,7 @@ socket.on('next_turn', (data) => {
         playButton.disabled = true; // 禁用出牌按钮
         passButton.disabled = true; // 禁用过牌按钮
     }
+
 });
 
 // 游戏结束
@@ -203,13 +212,16 @@ socket.on('game_over', (data) => {
     if (data.winnerId) {
         const winner = playerList.find(p => p.id === data.winnerId);
         const winnerName = winner ? winner.username : '未知玩家';
-        gameStatusElement.textContent = `游戏结束！胜利者是：${winnerName}`;
+         document.getElementById('game-status-message').textContent = `游戏结束！胜利者是：${winnerName}`;
+        gameStatusElement.textContent = `游戏结束`;
     } else if (data.message) {
-        gameStatusElement.textContent = `游戏结束：${data.message}`;
+         document.getElementById('game-status-message').textContent = `游戏结束：${data.message}`;
+          gameStatusElement.textContent = `游戏结束`;
     } else {
-        gameStatusElement.textContent = '游戏结束！';
+         document.getElementById('game-status-message').textContent = `游戏结束`;
+           gameStatusElement.textContent = `游戏结束`;
     }
-    // 可以添加其他游戏结束后的处理，例如显示结算信息等
+    
     // 游戏结束后可以显示重置游戏的按钮或者返回大厅
 });
 
@@ -255,6 +267,7 @@ socket.on('game_reset', () => {
     lobbyElement.style.display = 'block';
     currentPlayArea.innerHTML = ''; // Clear the table
     gameStatusElement.textContent = ''; // Clear status text
+      document.getElementById('game-status-message').textContent = '游戏已重置，等待开始！';
     if (readyButton) readyButton.style.display = 'block'; // Show ready button if it exists
     selectedCards = []; // Clear selected cards
     // Player list will be updated by player_list event
@@ -262,12 +275,14 @@ socket.on('game_reset', () => {
 
 // 一轮结束（清空桌面牌）
 socket.on('round_ended', () => {
+        document.getElementById('game-status-message').textContent = '一轮结束，清空桌面';
     console.log('一轮结束，清空桌面');
     displayPlayArea([]); // Clear the displayed play area
 });
 
 // 玩家过牌
 socket.on('player_passed', (data) => {
+    document.getElementById('game-status-message').textContent = `玩家 ${data.playerId} 过牌`;
     console.log(`玩家 ${data.playerId} 过牌`);
     // Optional: Display a message or indicator that the player passed
 });
@@ -286,14 +301,17 @@ function displayError(message) {
 
 // 更新玩家列表显示 (在大厅或游戏界面中使用，取决于UI设计)
 function updatePlayerList(players) {
-    // This function's implementation depends on where and how you want to display the player list.
-    // If you have a dedicated area for it, update its content here.
-    console.log("Updating player list display (implementation needed)");
-    // Example for a list in the lobby:
-    const listElement = document.getElementById('lobby-player-list');
-    if (listElement) {
-         listElement.innerHTML = '';
-         players.forEach(player => {
+  // Find the lobby-player-list element
+  const listElement = document.getElementById('lobby-player-list');
+  if (listElement) {
+    listElement.innerHTML = ''; // Clear existing list
+    players.forEach(player => {
+      // Create list item and set its content
+      const li = document.createElement('li');
+      li.textContent = `${player.username} ${player.ready ? '(已准备)' : ''}`;
+      if (player.id === myPlayerId) {
+        li.style.fontWeight = 'bold'; // Mark self
+      }
             const li = document.createElement('li');
             li.textContent = `${player.username} ${player.ready ? '(已准备)' : ''}`;
             if (player.id === myPlayerId) {
@@ -419,10 +437,12 @@ function updatePlayerAreas(players, myPlayerId) {
                  playerNames[displayPosition].textContent = player.username;
             }
             if (player.id !== myPlayerId && playerHands[displayPosition]) {
-               // Display hand size for other players
-            } else if (playerHands[displayPosition]) {
+                 if (playerHandSizes[displayPosition]) {
+                    playerHandSizes[displayPosition].textContent = `手牌数：${player.handSize}`;
+               }
+            } else if (playerHands[displayPosition]&& playerHandSizes[displayPosition]) {
                  // Clear hand size for the current player
-                 playerHands[displayPosition].textContent = '';
+                 playerHandSizes[displayPosition].textContent = '';
             }
         }
     });
