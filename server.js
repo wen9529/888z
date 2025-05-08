@@ -318,11 +318,6 @@ io.on('connection', (socket) => {
 
     socket.on('set_username', (username) => {
         socket.username = username; // Store the username in the socket object
-    });
-
-    io.to(fixedRoomId).emit('player_list', Object.values(room.players).map(player => ({ id: player.id, username: player.username })));
-
-    socket.emit('joined_room', { roomId: fixedRoomId, playerId: socket.id, username: room.players[socket.id].username });
 
 
     socket.on('create_room', () => {
@@ -368,14 +363,7 @@ io.on('connection', (socket) => {
             roomId: roomId,
             playerId: socket.id,
             username: rooms[roomId].players[socket.id].username,
-            players: Object.values(rooms[roomId].players).map(player => ({
-                id: player.id,
-                username: player.username
-            }))
         });
-        //Update player list
-        io.to(roomId).emit('player_list', Object.values(rooms[roomId].players).map(player => ({ id: player.id, username: player.username })));
-
 
 
         //const availablePositions = ['bottom', 'left', 'top', 'right'].filter(pos => !Object.values(rooms[roomId].players).some(p => p.position === pos));
