@@ -24,6 +24,13 @@ const gameStatusElement = document.getElementById('turn-indicator'); // Changed 
 const errorMessageElement = document.getElementById('error-message');
 const currentPlayArea = document.querySelector('#current-play .cards');
 
+const currentTurnElement = document.getElementById('current-turn');
+const currentPlayInfoElement = document.getElementById('current-play-info');
+const remainingCardsElement = document.getElementById('remaining-cards');
+const gameOverResultElement = document.getElementById('game-over-result');
+
+
+
 
 
 
@@ -187,6 +194,17 @@ socket.on('cards_played', (data) => {
 // Update to indicate whose turn it is
 socket.on('next_turn', (data) => {
     console.log('轮到玩家', data.playerId, '出牌');
+    const playerInfo = playerList.find(p => p.id === data.playerId);
+    let playerName = '未知玩家';
+    if (playerInfo) {
+        playerName = playerInfo.username;
+    }
+    // 更新当前回合玩家显示
+    if(currentTurnElement){
+        currentTurnElement.textContent = `当前回合：${playerName}`;
+    }
+    
+    
     if (data.playerId === myPlayerId) {
         // Update turn indicator for yourself
         gameStatusElement.textContent = 'Your turn to play';
@@ -194,12 +212,6 @@ socket.on('next_turn', (data) => {
         passButton.disabled = false; // 启用过牌按钮
     } else {
         const playerInfo = playerList.find(p => p.id === data.playerId);
-        // Update turn indicator for other players
-        let playerName = '未知玩家';
-        if (playerInfo) {
-            playerName = playerInfo.username; // 获取玩家的用户名
-        }
-        gameStatusElement.textContent = `轮到 ${playerName} 出牌`;
         playButton.disabled = true; // 禁用出牌按钮
         passButton.disabled = true; // 禁用过牌按钮
     }
@@ -207,28 +219,48 @@ socket.on('next_turn', (data) => {
 });
 
 // 游戏结束
+
+
+
+
 socket.on('game_over', (data) => {
+    gameOverResultElement.style.display = 'block';
+    gameOverResultElement.innerHTML = ''; // 清空之前的内容
     console.log('游戏结束:', data);
     if (data.winnerId) {
         const winner = playerList.find(p => p.id === data.winnerId);
         const winnerName = winner ? winner.username : '未知玩家';
-         document.getElementById('game-status-message').textContent = `游戏结束！胜利者是：${winnerName}`;
+        const winnerElement = document.createElement('p');
+        winnerElement.textContent = `游戏结束！胜利者是：${winnerName}`;
+        gameOverResultElement.appendChild(winnerElement);
         gameStatusElement.textContent = `游戏结束`;
     } else if (data.message) {
-         document.getElementById('game-status-message').textContent = `游戏结束：${data.message}`;
-          gameStatusElement.textContent = `游戏结束`;
+        const messageElement = document.createElement('p');
+        messageElement.textContent = `游戏结束：${data.message}`;
+        gameOverResultElement.appendChild(messageElement);
+        gameStatusElement.textContent = `游戏结束`;
     } else {
          document.getElementById('game-status-message').textContent = `游戏结束`;
            gameStatusElement.textContent = `游戏结束`;
     }
-    
+    if (data.playerScores) {
+        let scoreString = '游戏得分：';
+        for (const playerId in data.playerScores) {
+            scoreString += ` 玩家${playerId}剩余手牌数:${data.playerScores[playerId]}`;
+            const scoreElement = document.createElement('p');
+            const player = playerList.find(p => p.id === playerId) || {username: "未知玩家"};
+            scoreElement.textContent = `玩家 ${player.username} 剩余手牌数：${data.playerScores[playerId]}`;
+            gameOverResultElement.appendChild(scoreElement);
+            
+        }
+    }
     // 游戏结束后可以显示重置游戏的按钮或者返回大厅
 });
 
 // 错误信息
 socket.on('game_error', (message) => {
     console.error('游戏错误:', message);
-    displayError(`游戏发生错误: ${message}`); // 在UI上显示错误信息
+    displayError(message); // 在UI上显示错误信息
 });
 
 // 通用错误处理
@@ -365,19 +397,19 @@ function displayCards(hand) {
         const cardElement = document.createElement('div');
         cardElement.classList.add('card');
         cardElement.dataset.card = `${card.rank}${card.suit}`; // 存储牌的信息
+        cardElement.classList.add('flip-card-animation');
 
         // Use checkImage to handle potential missing images
         checkImage(cardElement, card);
 
         cardElement.addEventListener('click', () => {
-            // Toggle card selection
-            const isSelected = selectedCards.some(c => c.rank === card.rank && c.suit === card.suit);
-            if (isSelected) {
-                selectedCards = selectedCards.filter(c => !(c.rank === card.rank && c.suit === card.suit));
-               cardElement.classList.remove('selected'); // Remove selected class
+            const cardInfo = { rank: card.rank, suit: card.suit };
+            if (cardElement.classList.contains('selected')) {
+                cardElement.classList.remove('selected');
+                selectedCards = selectedCards.filter(c => !(c.rank === cardInfo.rank && c.suit === cardInfo.suit));
             } else {
-                selectedCards.push(card);
-                 cardElement.classList.add('selected'); // Add selected class
+                cardElement.classList.add('selected');
+                selectedCards.push(cardInfo);
             }
             console.log('当前选中牌:', selectedCards);
         });
@@ -393,6 +425,7 @@ function displayPlayArea(play) {
             const cardElement = document.createElement('div');
             cardElement.classList.add('card', 'played'); // Add played class
 
+            cardElement.classList.add('flip-card-animation');
             // Use checkImage to handle potential missing images
             checkImage(cardElement, card);
 

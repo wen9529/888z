@@ -198,6 +198,7 @@ h1 {
 
 /* Individual card */
 .player-area .cards .card {
+    width: 60px;
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
@@ -208,7 +209,17 @@ h1 {
     transition: transform 0.1s ease;
     position: relative;
     margin-left: -25px;    
+    height: 90px;
 }
+/* Card transition effect for smoother movement */
+.player-area .cards .card {
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out; /* Smoothly animate transform and shadow */
+}
+/* Keyframes for flipping card */
+@keyframes flip-card {
+    to { transform: rotateY(180deg); }
+}
+
 /* First card to have no negative left margin */
 .player-area .cards .card:first-child {
     margin-left: 0;
