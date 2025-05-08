@@ -265,19 +265,6 @@ io.on('connection', (socket) => {
             // TODO: Add other hand type comparisons
         }
         return false;
-    }
-        if(type1 == 'flush' && type2 == 'flush'){
-            if(rankCompare == 0) return suitCompare > 0;
-            return rankCompare > 0
-        }   
-        if(type1 == 'fullhouse' && type2 == 'fullhouse'){
-           return rankCompare > 0
-        }
-        
-        if (type1 === 'bomb' && type2 !== 'bomb') return true;
-        if (type1 !== 'bomb' && type2 === 'bomb') return false;        
-        if (type1 === 'straightflush' && type2 !== 'straightflush') return true;
-        if (type1 !== 'straightflush' && type2 === 'straightflush') return false;
 
         if (type1 === type2) {           
             if (type1 === 'single' || type1 === 'pair' || type1 === 'triple' || type1 === 'bomb') {
