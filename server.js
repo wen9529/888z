@@ -332,7 +332,6 @@ io.on('connection', (socket) => {
     socket.on('set_username', (username) => {
         socket.username = username; // Store the username in the socket object
     });
-    }
 
     io.to(fixedRoomId).emit('player_list', Object.values(room.players).map(player => ({ id: player.id, username: player.username })));
 
